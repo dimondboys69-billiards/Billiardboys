@@ -119,6 +119,11 @@
               Mode: <span id="shuffleModeLabel" class="text-sky-400 font-bold">Standard Rotation</span>
             </button>
           </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2">
+            <span id="sessionInfo" class="text-[11px] text-slate-400">🗓 Tonight's session</span>
+            <button id="newSessionBtn" onclick="newSession()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold px-3 py-1.5 rounded-lg border border-slate-600 transition">New Session</button>
+          </div>
         </section>
 
         <!-- Dynamic Upcoming Matches Schedule -->
@@ -128,6 +133,25 @@
             <span class="text-[10px] bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded font-mono uppercase">Live Queue</span>
           </div>
           <div id="upcomingMatchesList" class="space-y-2"></div>
+        </section>
+
+        <!-- 2v2 TEAMS (Standard mode) -->
+        <section id="teamsPanel" class="hidden bg-pool-card border border-slate-700 rounded-2xl p-5 shadow-xl space-y-3">
+          <div class="flex flex-wrap justify-between items-center gap-2 border-b border-slate-700 pb-3">
+            <h2 class="text-lg font-bold text-sky-400">Teams (2v2)</h2>
+            <div id="teamsButtons" class="flex flex-wrap gap-2">
+              <button onclick="autoMakeTeams()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition">Auto-make teams</button>
+              <button onclick="addTeam()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-lg border border-slate-600 transition">+ Team</button>
+              <button onclick="clearTeams()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-2 rounded-lg border border-slate-600 transition">Clear all</button>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400">Tap a player, then tap a slot (or another player) to place or swap them. Teams take turns so everybody gets a fair number of matches.</p>
+          <div id="teamsStatus" class="space-y-0.5"></div>
+          <div id="teamsList" class="space-y-2"></div>
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Unassigned (Online)</p>
+            <div id="teamsPool" class="flex flex-wrap gap-1.5"></div>
+          </div>
         </section>
 
         <!-- Player Availability Toggle Grid -->
@@ -178,6 +202,16 @@
               </button>
             </div>
             <p id="victoryNote" class="hidden text-center text-xs text-slate-400 italic">🛡️ Only the Referee can record the result.</p>
+
+            <div id="replacePanel" class="bg-slate-900/60 border border-slate-700 rounded-xl p-3 space-y-2">
+              <p class="text-xs font-bold text-slate-300">Replace a player (someone left or is swapping in)</p>
+              <div class="flex flex-wrap items-center gap-2">
+                <select id="replaceOut" class="bg-slate-800 border border-slate-700 text-xs rounded-lg p-2 text-white flex-1 min-w-[110px]"></select>
+                <span class="text-slate-500">→</span>
+                <select id="replaceIn" class="bg-slate-800 border border-slate-700 text-xs rounded-lg p-2 text-white flex-1 min-w-[110px]"></select>
+                <button onclick="replaceActivePlayer()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition">Replace</button>
+              </div>
+            </div>
           </div>
         </section>
       </div>
@@ -186,20 +220,22 @@
       <div id="pageStandings" class="page-content hidden space-y-4">
         <section class="bg-pool-card border border-slate-700 rounded-2xl p-4 sm:p-5 shadow-xl">
           <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
-            <h2 class="text-lg font-bold text-sky-400">Monthly Standings</h2>
+            <h2 class="text-lg font-bold text-sky-400">Standings</h2>
             <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700 text-xs">
               <button id="tab1v1" onclick="switchStandingsTab('1v1')" class="px-3 py-1 rounded-md bg-pool-felt text-white font-bold">1v1</button>
               <button id="tab2v2" onclick="switchStandingsTab('2v2')" class="px-3 py-1 rounded-md text-slate-400">2v2</button>
               <button id="tabTournament" onclick="switchStandingsTab('tournament')" class="px-3 py-1 rounded-md text-slate-400">🏆 Tournament</button>
             </div>
           </div>
-          <div class="flex items-center gap-2 mb-4 text-xs">
+          <div class="flex flex-wrap items-center gap-2 mb-4 text-xs">
             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Game</span>
             <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700">
               <button id="typeAll" onclick="switchStandingsType('all')" class="px-3 py-1 rounded-md bg-pool-felt text-white font-bold">All</button>
               <button id="type9ball" onclick="switchStandingsType('9ball')" class="px-3 py-1 rounded-md text-slate-400">9-Ball</button>
               <button id="type8ball" onclick="switchStandingsType('8ball')" class="px-3 py-1 rounded-md text-slate-400">8-Ball</button>
             </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 ml-1">Period</span>
+            <select id="periodSelect" onchange="switchPeriod(this.value)" class="bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-white"></select>
           </div>
 
           <div class="w-full overflow-hidden">
@@ -261,6 +297,14 @@
             <h2 class="text-lg font-bold text-sky-400">Dynamic Tournament Bracket</h2>
             <div id="tournamentControls" class="flex flex-wrap items-center gap-2">
               <div class="flex items-center gap-1">
+                <button onclick="setTournamentMode('1v1')" id="tModeBtn1v1" class="px-3 py-2 rounded-xl text-xs font-bold bg-pool-felt text-white shadow">1v1</button>
+                <button onclick="setTournamentMode('2v2')" id="tModeBtn2v2" class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">2v2</button>
+              </div>
+              <select id="tTeamSource" onchange="setTeamSource(this.value)" class="hidden bg-slate-800 border border-slate-700 text-xs rounded-lg p-2 text-white">
+                <option value="mine">My teams</option>
+                <option value="random">Random partners</option>
+              </select>
+              <div class="flex items-center gap-1">
                 <button onclick="setGameType('9ball')" id="tBtnType9ball" class="px-3 py-2 rounded-xl text-xs font-bold bg-pool-felt text-white shadow">9-Ball</button>
                 <button onclick="setGameType('8ball')" id="tBtnType8ball" class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">8-Ball</button>
               </div>
@@ -283,6 +327,7 @@
               <button id="histTab1v1" onclick="switchHistoryTab('1v1')" class="px-3 py-1.5 rounded-md bg-pool-felt text-white font-bold">1v1</button>
               <button id="histTab2v2" onclick="switchHistoryTab('2v2')" class="px-3 py-1.5 rounded-md text-slate-400">2v2</button>
               <button id="histTabTournament" onclick="switchHistoryTab('tournament')" class="px-3 py-1.5 rounded-md text-slate-400">🏆 Tournament</button>
+              <button id="histTabSessions" onclick="switchHistoryTab('sessions')" class="px-3 py-1.5 rounded-md text-slate-400">🗓 Sessions</button>
             </div>
           </div>
           <div id="historyMatchesList" class="space-y-3">
@@ -349,7 +394,9 @@
       endMatch:    false,  // record who won (stop the match)
       tournament:  false,  // generate/clear bracket and record tournament results
       resetScores: true,   // reset one player / reset the whole leaderboard
-      deleteRecords: true  // delete match/tournament history records and player accounts
+      deleteRecords: true, // delete match/tournament history records and player accounts
+      teams:       false,  // edit the 2v2 teams and the random draw
+      sessions:    true    // New Session, restore / delete saved nights
     };
     const MATCH_WIN_POINTS = 3;
     function canDo(action) { return !REFEREE_ONLY[action] || isReferee; }
@@ -373,7 +420,15 @@
       tournamentCompleted: false,
       tournamentHistory: [],
       selectedGameType: '9ball',
-      tournamentGameType: null
+      tournamentGameType: null,
+      teams: [],                    // 2v2 teams (Standard mode): [{ id, p1, p2 }]
+      shuffleDraw: null,            // next random draw: { sideA: [...], sideB: [...] }
+      session: null,                // tonight's session (match counts for fair rotation)
+      sessionBackups: [],           // saved nights (kept in a separate document)
+      selectedTournamentMode: '1v1',
+      tournamentTeamSource: 'mine',
+      tournamentMode: '1v1',
+      tournamentTeams: []           // 2v2 bracket: [{ name, members: [a, b] }]
     };
 
     let currentUser = null;
@@ -381,6 +436,10 @@
     let currentStandingsType = 'all';
     let currentStandingsTab = '1v1';
     let currentHistoryTab = '1v1';
+    let currentPeriod = 'all';
+    let teamSel = null;     // selected item while editing teams (not saved)
+    let drawSel = null;     // selected name while swapping in the random draw
+    let openSessions = {};  // which saved nights are expanded
     let timerInterval = null;
 
     // --- INITIALIZATION & FIREBASE SYNC ---
@@ -406,10 +465,24 @@
         state.tournamentHistory = data.tournamentHistory || [];
         state.selectedGameType = validGameType(data.selectedGameType);
         state.tournamentGameType = data.tournamentGameType || null;
+        state.teams = data.teams || [];
+        state.shuffleDraw = data.shuffleDraw || null;
+        state.session = data.session || null;
+        state.selectedTournamentMode = data.selectedTournamentMode === '2v2' ? '2v2' : '1v1';
+        state.tournamentTeamSource = data.tournamentTeamSource === 'random' ? 'random' : 'mine';
+        state.tournamentMode = data.tournamentMode === '2v2' ? '2v2' : '1v1';
+        state.tournamentTeams = data.tournamentTeams || [];
 
         syncRotationQueue();
         render();
       }, err => console.error('Snapshot error:', err));
+
+      // Saved nights live in their own document so the main one never gets too big
+      db.collection('billiards').doc('session_backups').onSnapshot(doc => {
+        if (doc.metadata.hasPendingWrites) return;
+        state.sessionBackups = doc.exists ? (doc.data().items || []) : [];
+        renderHistory();
+      }, err => console.error('Backups snapshot error:', err));
 
       const rememberedUser = localStorage.getItem('billiards_user');
       if (rememberedUser) {
@@ -441,11 +514,14 @@
     }
 
     function saveState() {
+      try { ensureSession(); normalizeTeams(); refreshDraw(false); } catch (e) { console.error('Session error:', e); }
+
       // show the change immediately for the person who made it
       try { render(); } catch (e) { console.error('Render error:', e); }
 
       try {
         const payload = JSON.parse(JSON.stringify(state)); // strips undefined values
+        delete payload.sessionBackups;                      // stored in its own document
         payload.tournamentRounds = JSON.stringify(state.tournamentRounds || []);
         db.collection('billiards').doc('global_state').set(payload)
           .catch(err => {
@@ -591,6 +667,8 @@
       renderTournamentBracket();
       renderHistory();
       renderResetDropdown();
+      renderTeamsPanel();
+      renderSessionBar();
     }
 
     function setGameMode(mode) {
@@ -632,6 +710,24 @@
       show('resetPanel', canDo('resetScores'));
       show('deletePlayerPanel', canDo('deleteRecords'));
       show('tournamentControls', canDo('tournament'));
+      show('replacePanel', canDo('startMatch'));
+      show('teamsButtons', canDo('teams'));
+      show('newSessionBtn', canDo('sessions'));
+
+      const tOk = canDo('tournament');
+      const tm = state.selectedTournamentMode === '2v2' ? '2v2' : '1v1';
+      [['tModeBtn1v1', '1v1'], ['tModeBtn2v2', '2v2']].forEach(([id, k]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.className = pillClass(tm === k, 'px-3 py-2', tOk);
+        el.disabled = !tOk;
+      });
+      const src = document.getElementById('tTeamSource');
+      if (src) {
+        src.classList.toggle('hidden', tm !== '2v2');
+        src.value = state.tournamentTeamSource === 'random' ? 'random' : 'mine';
+        src.disabled = !tOk;
+      }
 
       const setBtn = (id, allowed) => {
         const el = document.getElementById(id);
@@ -692,15 +788,17 @@
         document.getElementById('sideBLabel').innerText = 'Player 2';
         document.getElementById('sideBPlayers').innerText = state.activeGame.sideB[0] || '-';
       } else {
-        document.getElementById('sideALabel').innerText = 'Team A';
+        const tl = state.activeGame.teamLabels || ['Team A', 'Team B'];
+        document.getElementById('sideALabel').innerText = tl[0];
         document.getElementById('sideAPlayers').innerText = state.activeGame.sideA.join(' & ');
-        document.getElementById('sideBLabel').innerText = 'Team B';
+        document.getElementById('sideBLabel').innerText = tl[1];
         document.getElementById('sideBPlayers').innerText = state.activeGame.sideB.join(' & ');
       }
 
       clearInterval(timerInterval);
       updateTimer();
       timerInterval = setInterval(updateTimer, 1000);
+      fillReplaceSelects();
     }
 
     function updateTimer() {
@@ -725,39 +823,7 @@
       const countTitle = document.getElementById('availableCountTitle');
       if (countTitle) countTitle.innerText = `Available Players (${activeAvailable.length})`;
 
-      const upcomingContainer = document.getElementById('upcomingMatchesList');
-      if (upcomingContainer) {
-        upcomingContainer.innerHTML = '';
-        const reqCount = is1v1 ? 2 : 4;
-        if (activeAvailable.length < reqCount) {
-          upcomingContainer.innerHTML = `<p class="text-xs text-slate-400 italic">At least ${reqCount} online/available players are required to schedule matches.</p>`;
-        } else {
-          let queuePool = [...activeAvailable];
-          if (state.shuffleMode) {
-            queuePool.sort(() => Math.random() - 0.5);
-          }
-
-          let matchNumber = 1;
-          for (let i = 0; i < queuePool.length; i += reqCount) {
-            let slice = queuePool.slice(i, i + reqCount);
-            if (slice.length === reqCount && matchNumber <= 3) {
-              const card = document.createElement('div');
-              card.className = 'bg-slate-900 border border-slate-800 p-3 rounded-xl flex justify-between items-center text-xs';
-
-              let matchText = is1v1
-                ? `<span class="font-bold text-sky-400">${esc(slice[0])}</span> <span class="text-slate-500 font-bold px-2">VS</span> <span class="font-bold text-amber-400">${esc(slice[1])}</span>`
-                : `<span class="font-bold text-sky-400">${esc(slice[0])} & ${esc(slice[1])}</span> <span class="text-slate-500 font-bold px-2">VS</span> <span class="font-bold text-amber-400">${esc(slice[2])} & ${esc(slice[3])}</span>`;
-
-              card.innerHTML = `
-                <span class="font-bold text-slate-400">Match #${matchNumber} ${matchNumber === 1 ? '⚡ Next' : ''}</span>
-                <div>${matchText}</div>
-              `;
-              upcomingContainer.appendChild(card);
-              matchNumber++;
-            }
-          }
-        }
-      }
+      renderUpcoming(document.getElementById('upcomingMatchesList'), is1v1, activeAvailable);
 
       const grid = document.getElementById('availabilityGrid');
       if (grid) {
@@ -794,6 +860,7 @@
       if (!requireAccess('queue', 'change who is in the queue')) return;
       if (state.players && state.players[name]) {
         state.players[name].available = !state.players[name].available;
+        if (state.players[name].available) onPlayerReady(name);
         syncRotationQueue();
         saveState();
       }
@@ -815,33 +882,46 @@
       const mode = state.selectedGameMode;
       const gameType = validGameType(state.selectedGameType);
       const reqCount = mode === '1v1' ? 2 : 4;
+      let game;
 
-      syncRotationQueue();
-      if (!state.rotationQueue || state.rotationQueue.length < reqCount) {
-        alert(`Need at least ${reqCount} ready players to start a ${mode} game.`);
-        return;
-      }
-
-      let selected = state.rotationQueue.slice(0, reqCount);
-      state.rotationQueue = state.rotationQueue.slice(reqCount).concat(selected);
-
-      if (mode === '1v1') {
-        state.activeGame = {
-          mode: '1v1',
-          gameType,
-          sideA: [selected[0]],
-          sideB: [selected[1]],
-          startTime: Date.now()
+      if (state.shuffleMode) {
+        // Random Shuffle: play exactly the draw that is shown in the schedule
+        let draw = drawIsValid(state.shuffleDraw) ? state.shuffleDraw : makeDraw();
+        if (!draw) {
+          alert(`Need at least ${reqCount} ready players to start a ${mode} game.`);
+          return;
+        }
+        game = { mode, gameType, sideA: draw.sideA.slice(), sideB: draw.sideB.slice() };
+        state.shuffleDraw = null; // a fresh draw is made for the following match
+      } else if (mode === '2v2') {
+        // Standard 2v2: the teams you made, taking turns
+        const pair = pickPairing(completeTeams(), ensureSession());
+        if (!pair) {
+          alert(teamStartProblem());
+          return;
+        }
+        game = {
+          mode: '2v2', gameType,
+          sideA: [pair[0].p1, pair[0].p2],
+          sideB: [pair[1].p1, pair[1].p2],
+          teamIds: [pair[0].id, pair[1].id],
+          teamLabels: [teamLabelOf(pair[0]), teamLabelOf(pair[1])]
         };
       } else {
-        state.activeGame = {
-          mode: '2v2',
-          gameType,
-          sideA: [selected[0], selected[1]],
-          sideB: [selected[2], selected[3]],
-          startTime: Date.now()
-        };
+        // Standard 1v1: normal queue rotation
+        syncRotationQueue();
+        if (!state.rotationQueue || state.rotationQueue.length < reqCount) {
+          alert(`Need at least ${reqCount} ready players to start a ${mode} game.`);
+          return;
+        }
+        const selected = state.rotationQueue.slice(0, reqCount);
+        state.rotationQueue = state.rotationQueue.slice(reqCount).concat(selected);
+        game = { mode: '1v1', gameType, sideA: [selected[0]], sideB: [selected[1]] };
       }
+
+      game.startTime = Date.now();
+      state.activeGame = game;
+      markMatchStarted(game);
 
       saveState();
       switchPage('scoreboard');
@@ -879,7 +959,8 @@
         mode: game.mode,
         gameType: gameType,
         winners: winners,
-        losers: losers
+        losers: losers,
+        ...(game.replaced && game.replaced.length ? { subs: game.replaced } : {})
       });
 
       state.activeGame = null;
@@ -893,13 +974,39 @@
       if (state.tournamentRounds && state.tournamentRounds.length > 0 && !state.tournamentCompleted) {
         if (!confirm('A tournament is still in progress. Replace it with a new bracket? (Unfinished tournaments are not saved to History.)')) return;
       }
-      let names = getPlayerNames().filter(n => state.players[n] && state.players[n].available);
-      if (names.length < 3) {
-        names = getPlayerNames();
-      }
-      if (names.length < 3) {
-        alert('You need at least 3 registered players to generate a tournament bracket.');
-        return;
+      const tMode = state.selectedTournamentMode === '2v2' ? '2v2' : '1v1';
+      let names;
+      let teamsMap = [];
+
+      if (tMode === '2v2') {
+        let groups;
+        if (state.tournamentTeamSource === 'random') {
+          const ready = readyNames();
+          if (ready.length < 6) {
+            alert('Random 2v2 needs at least 6 Ready players (3 teams).');
+            return;
+          }
+          const sh = ready.slice().sort(() => Math.random() - 0.5);
+          groups = [];
+          for (let i = 0; i + 1 < sh.length; i += 2) groups.push([sh[i], sh[i + 1]]);
+        } else {
+          groups = completeTeams().map(t => [t.p1, t.p2]);
+          if (groups.length < 3) {
+            alert('You need at least 3 complete teams (every member Ready). Use "Auto-make teams" in the Lobby, or choose "Random partners".');
+            return;
+          }
+        }
+        names = groups.map(g => g.join(' & '));
+        teamsMap = groups.map((g, i) => ({ name: names[i], members: g }));
+      } else {
+        names = getPlayerNames().filter(n => state.players[n] && state.players[n].available);
+        if (names.length < 3) {
+          names = getPlayerNames();
+        }
+        if (names.length < 3) {
+          alert('You need at least 3 registered players to generate a tournament bracket.');
+          return;
+        }
       }
 
       const shuffled = [...names].sort(() => Math.random() - 0.5);
@@ -949,6 +1056,8 @@
       state.tournamentThirdPlace = null;
       state.tournamentCompleted = false;
       state.tournamentGameType = validGameType(state.selectedGameType);
+      state.tournamentMode = tMode;
+      state.tournamentTeams = teamsMap;
 
       saveState();
     }
@@ -960,6 +1069,8 @@
       state.tournamentThirdPlace = null;
       state.tournamentCompleted = false;
       state.tournamentGameType = null;
+      state.tournamentMode = '1v1';
+      state.tournamentTeams = [];
       saveState();
     }
 
@@ -1069,6 +1180,29 @@
     //  - award points to the top 3
     //  - update "tournaments played / won" for everyone who took part
     //  - save the whole tournament in the History page
+    function tournamentMembers(name, teams) {
+      const list = teams || state.tournamentTeams || [];
+      const t = list.find(x => x.name === name);
+      return t ? t.members.slice() : [name];
+    }
+
+    function setTournamentMode(mode) {
+      if (!requireAccess('tournament', 'change the tournament mode')) return;
+      if (mode !== '1v1' && mode !== '2v2') return;
+      state.selectedTournamentMode = mode;
+      saveState();
+    }
+
+    function setTeamSource(v) {
+      if (!requireAccess('tournament', 'change the tournament teams')) return;
+      state.tournamentTeamSource = v === 'random' ? 'random' : 'mine';
+      saveState();
+    }
+
+    // When the final AND the 3rd-place game are decided:
+    //  - award points to every member of the top 3 (a team in 2v2)
+    //  - update "tournaments played / won" for everyone who took part
+    //  - save the whole tournament in the History page
     function checkTournamentCompletion() {
       const rounds = state.tournamentRounds;
       if (!rounds || rounds.length === 0 || state.tournamentCompleted) return;
@@ -1084,16 +1218,20 @@
         if (!state.tournamentThirdPlace || !state.tournamentThirdPlace.winner) return;
         third = state.tournamentThirdPlace.winner;
       } else if (before && before.length === 1) {
-        // 3-player tournament: the loser of the first match finishes 3rd
+        // 3-entry tournament: the loser of the first match finishes 3rd
         third = before[0].loser;
       }
 
       const first = finalMatch.winner;
       const second = finalMatch.loser;
+      const mode = state.tournamentMode || '1v1';
+      const teams = state.tournamentTeams || [];
+      const membersOf = n => (n ? tournamentMembers(n, teams) : []);
+      const firstM = membersOf(first), secondM = membersOf(second), thirdM = membersOf(third);
 
       const participants = new Set();
       rounds.forEach(r => r.forEach(m => {
-        [m.p1, m.p2].forEach(p => { if (p && p !== 'TBD') participants.add(p); });
+        [m.p1, m.p2].forEach(p => { if (p && p !== 'TBD') membersOf(p).forEach(x => participants.add(x)); });
       }));
 
       const gameType = state.tournamentGameType || null;
@@ -1101,10 +1239,10 @@
         const p = state.players[name];
         if (!p) return;
         const t = getTStats(p);
-        if (name === first)       recordStats(t, gameType, { played: 1, won: 1, points: TOURNAMENT_POINTS.first });
-        else if (name === second) recordStats(t, gameType, { played: 1, second: 1, points: TOURNAMENT_POINTS.second });
-        else if (name === third)  recordStats(t, gameType, { played: 1, third: 1, points: TOURNAMENT_POINTS.third });
-        else                      recordStats(t, gameType, { played: 1 });
+        if (firstM.includes(name))       recordStats(t, gameType, { played: 1, won: 1, points: TOURNAMENT_POINTS.first });
+        else if (secondM.includes(name)) recordStats(t, gameType, { played: 1, second: 1, points: TOURNAMENT_POINTS.second });
+        else if (thirdM.includes(name))  recordStats(t, gameType, { played: 1, third: 1, points: TOURNAMENT_POINTS.third });
+        else                             recordStats(t, gameType, { played: 1 });
       });
 
       if (!state.tournamentHistory) state.tournamentHistory = [];
@@ -1116,8 +1254,10 @@
         number: state.tournamentHistory.reduce((mx, t) => Math.max(mx, t.number || 0), 0) + 1,
         time: new Date().toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
         gameType,
+        mode,
         points: { ...TOURNAMENT_POINTS },
         first, second, third,
+        firstMembers: firstM, secondMembers: secondM, thirdMembers: thirdM,
         participants: [...participants],
         rounds: rounds.map((r, i) => ({ title: roundTitle(rounds, i), matches: r.map(clean) })),
         thirdPlace: tp ? { p1: tp.p1, p2: tp.p2, winner: tp.winner || null } : null
@@ -1142,7 +1282,7 @@
       let html = `<div class="space-y-4">`;
       if (typeLabel) {
         html += `<div class="flex items-center gap-2 text-xs">
-          <span class="text-slate-400">Game type:</span>
+          ${state.tournamentMode === '2v2' ? '<span class="bg-sky-500/20 text-sky-300 px-2.5 py-0.5 rounded-full border border-sky-500/30 uppercase font-semibold">2v2 teams</span>' : ''}<span class="text-slate-400">Game type:</span>
           <span class="bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30 uppercase font-semibold">${esc(typeLabel)}</span>
         </div>`;
       }
@@ -1219,7 +1359,7 @@
       const container = document.getElementById('historyMatchesList');
       if (!container) return;
 
-      const tabs = { '1v1': 'histTab1v1', '2v2': 'histTab2v2', 'tournament': 'histTabTournament' };
+      const tabs = { '1v1': 'histTab1v1', '2v2': 'histTab2v2', 'tournament': 'histTabTournament', 'sessions': 'histTabSessions' };
       Object.keys(tabs).forEach(k => {
         const el = document.getElementById(tabs[k]);
         if (el) el.className = k === currentHistoryTab
@@ -1228,6 +1368,11 @@
       });
 
       container.innerHTML = '';
+
+      if (currentHistoryTab === 'sessions') {
+        renderSessionsTab(container);
+        return;
+      }
 
       if (currentHistoryTab === 'tournament') {
         const list = state.tournamentHistory || [];
@@ -1238,7 +1383,7 @@
         list.forEach(t => {
           let html = `<div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-              <h3 class="text-sm font-black text-sky-400 uppercase">Tournament ${t.number}${t.gameType ? ' · ' + esc(gameTypeLabel(t.gameType)) : ''}</h3>
+              <h3 class="text-sm font-black text-sky-400 uppercase">Tournament ${t.number}${t.mode === '2v2' ? ' · 2v2' : ''}${t.gameType ? ' · ' + esc(gameTypeLabel(t.gameType)) : ''}</h3>
               <span class="flex items-center gap-2 text-[11px] text-slate-400">${esc(t.time)} · ${(t.participants || []).length} players
                 ${canDo('deleteRecords') ? `<button onclick="deleteTournamentRecord(${Number(t.id)})" class="bg-red-600/80 hover:bg-red-500 text-white font-bold px-2 py-1 rounded-lg">🗑 Delete</button>` : ''}
               </span>
@@ -1291,6 +1436,7 @@
             <div class="font-bold text-amber-400 flex items-center gap-1.5"><span>🏆 ${esc(winText)}</span></div>
             <div class="text-slate-500 line-through">${esc(loseText)}</div>
           </div>
+          ${m.subs && m.subs.length ? `<p class="text-[10px] text-slate-500">Substitution: ${m.subs.map(x => esc(x.in) + ' for ' + esc(x.out)).join(', ')}</p>` : ''}
         `;
         container.appendChild(item);
       });
@@ -1331,13 +1477,19 @@
       if (note) note.classList.toggle('hidden', currentStandingsType === 'all');
       const th4 = document.getElementById('thCol4');
       if (th4) th4.innerText = isT ? '🥇/🥈/🥉' : 'W/L';
+      renderPeriodOptions();
 
       const statKey = currentStandingsTab === '2v2' ? 'stats2v2' : 'stats1v1';
+      const computed = currentPeriod === 'all'
+        ? null
+        : computePeriodStats(currentStandingsTab, periodRange(currentPeriod), currentStandingsType);
 
       const sorted = getPlayerNames().map(name => {
         const p = state.players[name] || {};
-        const raw = isT ? getTStats(p) : (p[statKey] || null);
-        const stats = readStats(raw, currentStandingsType);
+        const zero = { played: 0, won: 0, lost: 0, second: 0, third: 0, points: 0 };
+        const stats = computed
+          ? Object.assign({}, zero, computed[name] || {})
+          : readStats(isT ? getTStats(p) : (p[statKey] || null), currentStandingsType);
         const winRate = stats.played > 0 ? ((stats.won / stats.played) * 100).toFixed(1) : '0.0';
         return { name, stats, winRate };
       }).sort((a, b) => b.stats.points - a.stats.points || parseFloat(b.winRate) - parseFloat(a.winRate) || b.stats.won - a.stats.won);
@@ -1404,6 +1556,706 @@
       alert('All player scores have been successfully reset.');
     }
 
+    // ============================================================
+    // TONIGHT'S SESSION (match counts used for fair rotation)
+    // ============================================================
+    function pairKey(a, b) { return [a, b].sort().join('|'); }
+    function meetKey(a, b) { return a < b ? `${a}-${b}` : `${b}-${a}`; }
+    function isReady(name) { return !!(state.players && state.players[name] && state.players[name].available); }
+    function readyNames() { return getPlayerNames().filter(isReady); }
+    function fmtDate(ts) { return new Date(ts).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }); }
+    function fmtTime(ts) { return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+
+    function newSessionObject() {
+      const ready = readyNames();
+      const counts = {};
+      ready.forEach(n => { counts[n] = 0; });
+      return { id: Date.now(), startedAt: Date.now(), counts, last: {}, seq: 0, meetings: {}, lastPartners: [], attendees: [...ready] };
+    }
+
+    function fixSession(s) {
+      s.counts = s.counts || {};
+      s.last = s.last || {};
+      s.meetings = s.meetings || {};
+      s.lastPartners = s.lastPartners || [];
+      s.attendees = s.attendees || [];
+      s.seq = s.seq || 0;
+      return s;
+    }
+
+    function ensureSession() {
+      if (!state.session) state.session = newSessionObject();
+      return fixSession(state.session);
+    }
+
+    // a throw-away copy (used to preview matches ahead without changing anything)
+    function sessionCopy() {
+      return fixSession(JSON.parse(JSON.stringify(state.session || newSessionObject())));
+    }
+
+    function lastOf(s, n) { return s.last[n] === undefined ? -1 : s.last[n]; }
+
+    function applyMatchToSession(s, game) {
+      s.seq = (s.seq || 0) + 1;
+      [...game.sideA, ...game.sideB].forEach(n => {
+        s.counts[n] = (s.counts[n] || 0) + 1;
+        s.last[n] = s.seq;
+        if (!s.attendees.includes(n)) s.attendees.push(n);
+      });
+      if (game.mode === '2v2' && game.sideA.length === 2 && game.sideB.length === 2) {
+        s.lastPartners = [pairKey(game.sideA[0], game.sideA[1]), pairKey(game.sideB[0], game.sideB[1])];
+        if (game.teamIds && game.teamIds.length === 2) {
+          const k = meetKey(game.teamIds[0], game.teamIds[1]);
+          s.meetings[k] = (s.meetings[k] || 0) + 1;
+        }
+      }
+    }
+
+    function markMatchStarted(game) { applyMatchToSession(ensureSession(), game); }
+
+    // A player who becomes Ready joins at the match count of whoever has played the fewest
+    // (among the people already there). Latecomers play soon but never get extra turns.
+    function onPlayerReady(name) {
+      const s = ensureSession();
+      const others = readyNames().filter(n => n !== name);
+      const floor = others.length ? Math.min(...others.map(n => s.counts[n] || 0)) : 0;
+      s.counts[name] = Math.max(s.counts[name] || 0, floor);
+      if (!s.attendees.includes(name)) s.attendees.push(name);
+    }
+
+    // ============================================================
+    // 2v2 TEAMS (Standard mode)
+    // ============================================================
+    function findTeam(id) { return (state.teams || []).find(t => t.id === id); }
+    function teamLabelOf(t) { return `Team ${(state.teams || []).findIndex(x => x.id === t.id) + 1}`; }
+    function inAnyTeam(n) { return (state.teams || []).some(t => t.p1 === n || t.p2 === n); }
+    function unassignedReady() { return readyNames().filter(n => !inAnyTeam(n)); }
+    function completeTeams() {
+      return (state.teams || []).filter(t => t.p1 && t.p2 && isReady(t.p1) && isReady(t.p2));
+    }
+
+    // no player may sit in two slots; deleted players are cleared
+    function normalizeTeams() {
+      if (!state.teams) state.teams = [];
+      const seen = new Set();
+      state.teams.forEach(t => ['p1', 'p2'].forEach(sl => {
+        const n = t[sl];
+        if (!n) { t[sl] = null; return; }
+        if (seen.has(n) || !state.players[n]) t[sl] = null; else seen.add(n);
+      }));
+    }
+
+    function nextTeamId() {
+      return (state.teams || []).reduce((mx, t) => Math.max(mx, t.id || 0), 0) + 1;
+    }
+
+    function teamStatusMessages() {
+      const msgs = [];
+      (state.teams || []).forEach((t, i) => {
+        const label = `Team ${i + 1}`;
+        if (!t.p1 && !t.p2) msgs.push(`${label} needs 2 players`);
+        else if (!t.p1 || !t.p2) msgs.push(`${label} needs 1 player`);
+        else {
+          const away = [t.p1, t.p2].filter(n => !isReady(n));
+          if (away.length) msgs.push(`${label} is waiting for ${away.join(' & ')} (Away)`);
+        }
+      });
+      const un = unassignedReady().length;
+      if (un > 0) msgs.push(`${un} unassigned player${un > 1 ? 's' : ''} - tap "Auto-make teams" or place them yourself`);
+      return msgs;
+    }
+
+    // Picks the next two teams. Fewest matches first, then who has waited longest, then the
+    // lowest team number. The opponent is the team they have met the least (then the one with
+    // fewer matches, then the lowest number), so after every team has met every other team the
+    // cycle starts again from Team 1 vs Team 2. 'sess' may be a copy.
+    function pickPairing(teams, sess) {
+      if (teams.length < 2) return null;
+      const stat = t => ({
+        plays: ((sess.counts[t.p1] || 0) + (sess.counts[t.p2] || 0)) / 2,
+        last: Math.max(lastOf(sess, t.p1), lastOf(sess, t.p2))
+      });
+      const info = teams.map((t, i) => Object.assign({ t, i }, stat(t)));
+      const first = info.slice().sort((a, b) => a.plays - b.plays || a.last - b.last || a.i - b.i)[0];
+      const second = info.filter(x => x !== first).sort((a, b) =>
+        (sess.meetings[meetKey(first.t.id, a.t.id)] || 0) - (sess.meetings[meetKey(first.t.id, b.t.id)] || 0)
+        || a.plays - b.plays || a.i - b.i)[0];
+      return [first.t, second.t];
+    }
+
+    function teamStartProblem() {
+      let m = completeTeams().length < 2
+        ? 'You need at least 2 complete teams (every member Ready) to start a 2v2 match.'
+        : 'Could not pick the next teams.';
+      const msgs = teamStatusMessages();
+      if (msgs.length) m += '\n\n' + msgs.join('\n');
+      return m;
+    }
+
+    function sameLoc(a, b) {
+      if (a.kind !== b.kind) return false;
+      return a.kind === 'pool' ? a.name === b.name : (a.teamId === b.teamId && a.slot === b.slot);
+    }
+    function getOcc(loc) {
+      if (loc.kind === 'pool') return loc.name;
+      const t = findTeam(loc.teamId);
+      return t ? t[loc.slot] : null;
+    }
+    function setOcc(loc, name) {
+      if (loc.kind !== 'slot') return;
+      const t = findTeam(loc.teamId);
+      if (t) t[loc.slot] = name || null;
+    }
+
+    // Two taps: tap a player or slot, then tap where it should go (swap / move).
+    function teamTap(el) {
+      if (!requireAccess('teams', 'edit the teams')) return;
+      const loc = el.dataset.kind === 'pool'
+        ? { kind: 'pool', name: el.dataset.name }
+        : { kind: 'slot', teamId: Number(el.dataset.team), slot: el.dataset.slot };
+      if (!teamSel) { teamSel = loc; renderTeamsPanel(); return; }
+      if (sameLoc(teamSel, loc)) { teamSel = null; renderTeamsPanel(); return; }
+      const a = getOcc(teamSel), b = getOcc(loc);
+      setOcc(teamSel, b);
+      setOcc(loc, a);
+      teamSel = null;
+      normalizeTeams();
+      saveState();
+    }
+
+    function clearSlot(el) {
+      if (!requireAccess('teams', 'edit the teams')) return;
+      setOcc({ kind: 'slot', teamId: Number(el.dataset.team), slot: el.dataset.slot }, null);
+      teamSel = null;
+      saveState();
+    }
+
+    function addTeam() {
+      if (!requireAccess('teams', 'edit the teams')) return;
+      state.teams.push({ id: nextTeamId(), p1: null, p2: null });
+      saveState();
+    }
+
+    function removeTeam(id) {
+      if (!requireAccess('teams', 'edit the teams')) return;
+      const t = findTeam(id);
+      if (!t) return;
+      if ((t.p1 || t.p2) && !confirm('Remove this team? Its players become unassigned.')) return;
+      state.teams = state.teams.filter(x => x.id !== id);
+      teamSel = null;
+      saveState();
+    }
+
+    function clearTeams() {
+      if (!requireAccess('teams', 'edit the teams')) return;
+      if (!(state.teams || []).length) return;
+      if (!confirm('Clear ALL teams?')) return;
+      state.teams = [];
+      ensureSession().meetings = {};
+      teamSel = null;
+      saveState();
+    }
+
+    // Fills empty slots first, then forms new teams from the remaining unassigned Ready players.
+    // Existing teams are never broken up.
+    function autoMakeTeams() {
+      if (!requireAccess('teams', 'edit the teams')) return;
+      normalizeTeams();
+      syncRotationQueue();
+      const pool = (state.rotationQueue || []).filter(n => !inAnyTeam(n));
+      state.teams.forEach(t => ['p1', 'p2'].forEach(sl => {
+        if (!t[sl] && pool.length) t[sl] = pool.shift();
+      }));
+      while (pool.length >= 2) {
+        state.teams.push({ id: nextTeamId(), p1: pool.shift(), p2: pool.shift() });
+      }
+      teamSel = null;
+      saveState();
+    }
+
+    function renderTeamsPanel() {
+      const panel = document.getElementById('teamsPanel');
+      if (!panel) return;
+      const visible = state.selectedGameMode === '2v2' && !state.shuffleMode;
+      panel.classList.toggle('hidden', !visible);
+      if (!visible) return;
+
+      const can = canDo('teams');
+      const teams = state.teams || [];
+      const selSlot = (t, sl) => teamSel && teamSel.kind === 'slot' && teamSel.teamId === t.id && teamSel.slot === sl;
+      const slotHtml = (t, sl) => {
+        const n = t[sl];
+        const away = n && !isReady(n);
+        const cls = selSlot(t, sl)
+          ? 'bg-amber-500/30 border-amber-400 text-amber-200'
+          : (n ? (away ? 'bg-slate-900 border-slate-700 text-slate-500' : 'bg-emerald-950/40 border-emerald-500/50 text-emerald-300')
+               : 'bg-slate-900 border-dashed border-slate-700 text-slate-500');
+        const label = n ? `${esc(n)}${away ? ' <span class="font-normal">(Away)</span>' : ''}` : '<span class="font-normal italic">empty</span>';
+        return `<div class="flex items-stretch gap-1 flex-1 min-w-0">
+          <button ${can ? '' : 'disabled'} data-kind="slot" data-team="${t.id}" data-slot="${sl}" onclick="teamTap(this)" class="flex-1 min-w-0 truncate px-2 py-2 rounded-lg text-xs font-bold border ${cls}">${label}</button>
+          ${n && can ? `<button data-team="${t.id}" data-slot="${sl}" onclick="clearSlot(this)" title="Remove from team" class="px-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-red-300">✕</button>` : ''}
+        </div>`;
+      };
+
+      const list = document.getElementById('teamsList');
+      if (list) {
+        list.innerHTML = teams.length ? teams.map((t, i) => `
+          <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-sky-400">Team ${i + 1}</span>
+              ${can ? `<button onclick="removeTeam(${t.id})" class="text-[11px] text-slate-500 hover:text-red-300">Remove team</button>` : ''}
+            </div>
+            <div class="flex gap-2">${slotHtml(t, 'p1')}${slotHtml(t, 'p2')}</div>
+          </div>`).join('')
+          : '<p class="text-xs text-slate-400 italic">No teams yet. Tap "Auto-make teams" or "+ Team".</p>';
+      }
+
+      const pool = document.getElementById('teamsPool');
+      if (pool) {
+        const un = unassignedReady();
+        pool.innerHTML = un.length ? un.map(n => {
+          const sel = teamSel && teamSel.kind === 'pool' && teamSel.name === n;
+          return `<button ${can ? '' : 'disabled'} data-kind="pool" data-name="${esc(n)}" onclick="teamTap(this)" class="px-2.5 py-1.5 rounded-lg text-xs font-bold border ${sel ? 'bg-amber-500/30 border-amber-400 text-amber-200' : 'bg-slate-800 border-slate-700 text-slate-100'}">${esc(n)}</button>`;
+        }).join('') : '<span class="text-[11px] text-slate-500 italic">Everyone who is Online is in a team.</span>';
+      }
+
+      const status = document.getElementById('teamsStatus');
+      if (status) {
+        const msgs = teamStatusMessages();
+        status.innerHTML = msgs.map(m => `<p class="text-[11px] text-amber-300">⚠️ ${esc(m)}</p>`).join('');
+      }
+    }
+
+    // ============================================================
+    // RANDOM SHUFFLE DRAW (1v1 and 2v2)
+    // ============================================================
+    function drawSize() { return state.selectedGameMode === '1v1' ? 2 : 4; }
+
+    // Players who have played the fewest matches tonight go first (ties are random).
+    // In 2v2 the split avoids repeating last match's partners when it can.
+    function makeDraw() {
+      const need = drawSize();
+      const ready = readyNames();
+      if (ready.length < need) return null;
+      const s = ensureSession();
+      const order = ready.slice().sort(() => Math.random() - 0.5)
+        .sort((a, b) => (s.counts[a] || 0) - (s.counts[b] || 0) || lastOf(s, a) - lastOf(s, b));
+      const chosen = order.slice(0, need);
+      if (need === 2) return { sideA: [chosen[0]], sideB: [chosen[1]] };
+
+      const prev = new Set(s.lastPartners || []);
+      const splits = [[[0, 1], [2, 3]], [[0, 2], [1, 3]], [[0, 3], [1, 2]]].map(sp => ({
+        sp,
+        repeats: sp.reduce((n, pr) => n + (prev.has(pairKey(chosen[pr[0]], chosen[pr[1]])) ? 1 : 0), 0)
+      }));
+      const best = Math.min(...splits.map(x => x.repeats));
+      const opts = splits.filter(x => x.repeats === best);
+      const pick = opts[Math.floor(Math.random() * opts.length)].sp;
+      return { sideA: pick[0].map(i => chosen[i]), sideB: pick[1].map(i => chosen[i]) };
+    }
+
+    function drawIsValid(d) {
+      if (!d || !Array.isArray(d.sideA) || !Array.isArray(d.sideB)) return false;
+      const per = drawSize() / 2;
+      if (d.sideA.length !== per || d.sideB.length !== per) return false;
+      const all = [...d.sideA, ...d.sideB];
+      return new Set(all).size === all.length && all.every(isReady);
+    }
+
+    function refreshDraw(force) {
+      if (!state.shuffleMode) { state.shuffleDraw = null; return; }
+      if (force || !drawIsValid(state.shuffleDraw)) state.shuffleDraw = makeDraw();
+    }
+
+    function redrawShuffle() {
+      if (!requireAccess('teams', 'change the draw')) return;
+      const before = JSON.stringify(state.shuffleDraw);
+      for (let i = 0; i < 6; i++) {
+        refreshDraw(true);
+        if (JSON.stringify(state.shuffleDraw) !== before) break;
+      }
+      drawSel = null;
+      saveState();
+    }
+
+    // Tap one name, then another, to swap them (also works with players who are waiting).
+    function drawTap(name) {
+      if (!requireAccess('teams', 'change the players')) return;
+      const d = state.shuffleDraw;
+      if (!d) return;
+      if (!drawSel) { drawSel = name; renderUpcomingAndAvailability(); return; }
+      if (drawSel === name) { drawSel = null; renderUpcomingAndAvailability(); return; }
+      const a = drawSel;
+      drawSel = null;
+      const locate = n => {
+        for (const side of ['sideA', 'sideB']) {
+          const i = d[side].indexOf(n);
+          if (i !== -1) return { side, i };
+        }
+        return null;
+      };
+      const la = locate(a), lb = locate(name);
+      if (la && lb) { d[la.side][la.i] = name; d[lb.side][lb.i] = a; }
+      else if (la) { d[la.side][la.i] = name; }
+      else if (lb) { d[lb.side][lb.i] = a; }
+      else { renderUpcomingAndAvailability(); return; }
+      saveState();
+    }
+
+    function renderDrawPreview(container) {
+      const d = state.shuffleDraw;
+      const need = drawSize();
+      if (!d) {
+        container.innerHTML = `<p class="text-xs text-slate-400 italic">At least ${need} Ready players are needed for a random draw.</p>`;
+        return;
+      }
+      const can = canDo('teams');
+      const chip = n => `<button ${can ? '' : 'disabled'} data-name="${esc(n)}" onclick="drawTap(this.dataset.name)" class="px-2.5 py-1.5 rounded-lg text-xs font-bold border ${drawSel === n ? 'bg-amber-500/30 border-amber-400 text-amber-200' : 'bg-slate-800 border-slate-700 text-slate-100'}">${esc(n)}</button>`;
+      const inDraw = new Set([...d.sideA, ...d.sideB]);
+      const waiting = readyNames().filter(n => !inDraw.has(n));
+      container.innerHTML = `
+        <p class="text-[11px] text-slate-400">🔀 Random draw for the next match.${can ? ' Tap two names to swap them.' : ''}</p>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+          <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center">
+            <div class="flex flex-col gap-1.5 items-stretch">${d.sideA.map(chip).join('')}</div>
+            <span class="text-slate-500 font-bold text-xs">VS</span>
+            <div class="flex flex-col gap-1.5 items-stretch">${d.sideB.map(chip).join('')}</div>
+          </div>
+        </div>
+        ${waiting.length ? `<p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 pt-1">Waiting (${waiting.length})</p><div class="flex flex-wrap gap-1.5">${waiting.map(chip).join('')}</div>` : ''}
+        ${can ? '<button onclick="redrawShuffle()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2 rounded-xl border border-slate-600 transition">🔀 Re-draw</button>' : ''}`;
+    }
+
+    function renderTeamSchedule(container) {
+      const teams = completeTeams();
+      if (teams.length < 2) {
+        container.innerHTML = '<p class="text-xs text-slate-400 italic">Need at least 2 complete teams (every member Ready). Make your teams below.</p>';
+        return;
+      }
+      const sim = sessionCopy();
+      let html = '';
+      for (let n = 1; n <= 3; n++) {
+        const pr = pickPairing(teams, sim);
+        if (!pr) break;
+        const [a, b] = pr;
+        html += `<div class="bg-slate-900 border border-slate-800 p-3 rounded-xl text-xs space-y-1">
+          <div class="font-bold text-slate-400">Match #${n} ${n === 1 ? '⚡ Next' : ''}</div>
+          <div class="flex justify-between items-center gap-2">
+            <div class="min-w-0"><span class="font-bold text-sky-400">${esc(teamLabelOf(a))}</span><span class="text-slate-400"> ${esc(a.p1)} & ${esc(a.p2)}</span></div>
+            <span class="text-slate-500 font-bold px-1">VS</span>
+            <div class="min-w-0 text-right"><span class="font-bold text-amber-400">${esc(teamLabelOf(b))}</span><span class="text-slate-400"> ${esc(b.p1)} & ${esc(b.p2)}</span></div>
+          </div>
+        </div>`;
+        applyMatchToSession(sim, { mode: '2v2', sideA: [a.p1, a.p2], sideB: [b.p1, b.p2], teamIds: [a.id, b.id] });
+      }
+      container.innerHTML = html;
+    }
+
+    function renderUpcoming(container, is1v1, queue) {
+      if (!container) return;
+      container.innerHTML = '';
+      if (state.shuffleMode) { renderDrawPreview(container); return; }
+      if (!is1v1) { renderTeamSchedule(container); return; }
+
+      if (queue.length < 2) {
+        container.innerHTML = '<p class="text-xs text-slate-400 italic">At least 2 online/available players are required to schedule matches.</p>';
+        return;
+      }
+      let matchNumber = 1;
+      for (let i = 0; i + 1 < queue.length && matchNumber <= 3; i += 2) {
+        const card = document.createElement('div');
+        card.className = 'bg-slate-900 border border-slate-800 p-3 rounded-xl flex justify-between items-center text-xs';
+        card.innerHTML = `
+          <span class="font-bold text-slate-400">Match #${matchNumber} ${matchNumber === 1 ? '⚡ Next' : ''}</span>
+          <div><span class="font-bold text-sky-400">${esc(queue[i])}</span> <span class="text-slate-500 font-bold px-2">VS</span> <span class="font-bold text-amber-400">${esc(queue[i + 1])}</span></div>`;
+        container.appendChild(card);
+        matchNumber++;
+      }
+    }
+
+    // ============================================================
+    // REPLACE A PLAYER DURING A MATCH
+    // ============================================================
+    function fillReplaceSelects() {
+      const out = document.getElementById('replaceOut');
+      const inn = document.getElementById('replaceIn');
+      if (!out || !inn || !state.activeGame) return;
+      const g = state.activeGame;
+      const playing = [...g.sideA, ...g.sideB];
+      const fill = (sel, names) => {
+        const keep = sel.value;
+        sel.innerHTML = names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+        if (keep && names.includes(keep)) sel.value = keep;
+      };
+      fill(out, playing);
+      fill(inn, readyNames().filter(n => !playing.includes(n)));
+    }
+
+    function replaceActivePlayer() {
+      if (!requireAccess('startMatch', 'replace a player')) return;
+      const g = state.activeGame;
+      if (!g) return;
+      const outName = document.getElementById('replaceOut').value;
+      const inName = document.getElementById('replaceIn').value;
+      if (!outName || !inName) { alert('Choose who leaves and who comes in (the new player must be Ready).'); return; }
+      ['sideA', 'sideB'].forEach(side => {
+        const i = g[side].indexOf(outName);
+        if (i !== -1) g[side][i] = inName;
+      });
+      const s = ensureSession();
+      s.counts[inName] = (s.counts[inName] || 0) + 1;
+      s.last[inName] = s.seq;
+      if (!s.attendees.includes(inName)) s.attendees.push(inName);
+      if (g.mode === '2v2') s.lastPartners = [pairKey(g.sideA[0], g.sideA[1]), pairKey(g.sideB[0], g.sideB[1])];
+      g.replaced = (g.replaced || []).concat([{ out: outName, in: inName }]);
+      saveState();
+    }
+
+    // ============================================================
+    // SESSIONS & BACKUPS
+    // ============================================================
+    const BACKUPS_MAX_BYTES = 900000; // Firestore documents are limited to 1 MB
+
+    function saveBackups() {
+      return db.collection('billiards').doc('session_backups')
+        .set(JSON.parse(JSON.stringify({ items: state.sessionBackups || [] })));
+    }
+
+    function compactMatch(m) {
+      return Object.assign({ id: m.id, time: m.time || '', mode: m.mode, gameType: m.gameType || null,
+        winners: m.winners || [], losers: m.losers || [] }, (m.subs && m.subs.length) ? { subs: m.subs } : {});
+    }
+    function compactTournament(t) {
+      return { id: t.id, number: t.number, mode: t.mode || '1v1', gameType: t.gameType || null, first: t.first, second: t.second, third: t.third || null };
+    }
+
+    function newSession() {
+      if (!requireAccess('sessions', 'start a new session')) return;
+      if (state.activeGame) { alert('End the current match first.'); return; }
+      const s = ensureSession();
+      if (!confirm("Start a new session? Tonight's teams and match counts are saved as a backup, then cleared. Standings and History are not changed.")) return;
+
+      const now = Date.now();
+      const backup = JSON.parse(JSON.stringify({
+        id: now,
+        startedAt: s.startedAt,
+        endedAt: now,
+        attendees: s.attendees,
+        counts: s.counts,
+        teams: (state.teams || []).map((t, i) => ({ label: `Team ${i + 1}`, members: [t.p1, t.p2].filter(Boolean) })),
+        matches: (state.matchHistory || []).filter(m => m.id >= s.startedAt && m.id <= now).map(compactMatch),
+        tournaments: (state.tournamentHistory || []).filter(t => t.id >= s.startedAt && t.id <= now).map(compactTournament),
+        snapshot: { session: s, teams: state.teams || [] }
+      }));
+
+      const prev = state.sessionBackups || [];
+      state.sessionBackups = [backup].concat(prev);
+      if (JSON.stringify(state.sessionBackups).length > BACKUPS_MAX_BYTES) {
+        state.sessionBackups = prev;
+        alert('Backup storage is full. Delete some old backups first.');
+        return;
+      }
+      saveBackups().then(() => {
+        state.session = newSessionObject();
+        state.teams = [];
+        state.shuffleDraw = null;
+        teamSel = null;
+        saveState();
+        alert('Backup saved. A new session has started.');
+      }).catch(err => {
+        console.error('Backup error:', err);
+        state.sessionBackups = prev;
+        render();
+        alert('Could not save the backup, so nothing was cleared.');
+      });
+    }
+
+    function restoreSessionBackup(id) {
+      if (!requireAccess('sessions', 'restore a session')) return;
+      if (state.activeGame) { alert('End the current match first.'); return; }
+      const prev = state.sessionBackups || [];
+      const b = prev.find(x => x.id === id);
+      if (!b || !b.snapshot) return;
+      if (!confirm('Restore this night? The current session (teams and match counts) is replaced by the saved one.')) return;
+
+      state.sessionBackups = prev.filter(x => x.id !== id);
+      saveBackups().then(() => {
+        state.session = fixSession(JSON.parse(JSON.stringify(b.snapshot.session)));
+        state.teams = JSON.parse(JSON.stringify(b.snapshot.teams || []));
+        state.shuffleDraw = null;
+        teamSel = null;
+        saveState();
+      }).catch(err => {
+        console.error('Restore error:', err);
+        state.sessionBackups = prev;
+        render();
+        alert('Could not restore the backup.');
+      });
+    }
+
+    function deleteSessionBackup(id) {
+      if (!requireAccess('sessions', 'delete a saved session')) return;
+      const prev = state.sessionBackups || [];
+      if (!prev.some(x => x.id === id)) return;
+      if (!confirm('Delete this saved session? This cannot be undone.')) return;
+      state.sessionBackups = prev.filter(x => x.id !== id);
+      saveBackups().then(() => renderHistory()).catch(err => {
+        console.error('Delete backup error:', err);
+        state.sessionBackups = prev;
+        renderHistory();
+        alert('Could not delete the backup.');
+      });
+      renderHistory();
+    }
+
+    function toggleSessionOpen(id) { openSessions[id] = !openSessions[id]; renderHistory(); }
+
+    function renderSessionBar() {
+      const el = document.getElementById('sessionInfo');
+      if (!el) return;
+      const s = state.session;
+      if (!s) { el.innerText = "🗓 Tonight's session starts with the first change"; return; }
+      const n = (state.matchHistory || []).filter(m => m.id >= s.startedAt).length;
+      el.innerText = `🗓 Session since ${fmtTime(s.startedAt)} · ${n} match${n === 1 ? '' : 'es'} · ${(s.attendees || []).length} players`;
+    }
+
+    function renderSessionsTab(container) {
+      const s = state.session;
+      const tonight = s ? (state.matchHistory || []).filter(m => m.id >= s.startedAt).length : 0;
+      let html = `<div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
+        <p class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Tonight (current session)</p>
+        <p class="text-xs text-slate-300">${s ? `Started ${esc(fmtDate(s.startedAt))}, ${esc(fmtTime(s.startedAt))} · ${tonight} match${tonight === 1 ? '' : 'es'} · ${(s.attendees || []).length} players` : 'Not started yet'}</p>
+        ${canDo('sessions') ? '<button onclick="newSession()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition">Start New Session (saves a backup)</button>' : ''}
+      </div>`;
+
+      const list = state.sessionBackups || [];
+      if (!list.length) {
+        html += '<p class="text-xs text-slate-400 italic">No saved sessions yet. When the Referee starts a new session, the previous night is saved here.</p>';
+      }
+      list.forEach(b => {
+        const open = !!openSessions[b.id];
+        html += `<div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
+          <div class="flex justify-between items-start gap-2">
+            <div>
+              <p class="text-sm font-black text-sky-400">${esc(fmtDate(b.startedAt))}</p>
+              <p class="text-[11px] text-slate-400">${esc(fmtTime(b.startedAt))} - ${esc(fmtTime(b.endedAt))} · ${(b.matches || []).length} matches · ${(b.attendees || []).length} players</p>
+            </div>
+            <div class="flex flex-wrap justify-end gap-1.5">
+              <button onclick="toggleSessionOpen(${Number(b.id)})" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold px-2 py-1 rounded-lg border border-slate-700">${open ? 'Hide' : 'Details'}</button>
+              ${canDo('sessions') ? `<button onclick="restoreSessionBackup(${Number(b.id)})" class="bg-amber-600/80 hover:bg-amber-500 text-white text-[11px] font-bold px-2 py-1 rounded-lg">Restore</button>
+              <button onclick="deleteSessionBackup(${Number(b.id)})" class="bg-red-600/80 hover:bg-red-500 text-white text-[11px] font-bold px-2 py-1 rounded-lg">🗑 Delete</button>` : ''}
+            </div>
+          </div>`;
+        if (open) {
+          const counts = Object.keys(b.counts || {}).sort((x, y) => (b.counts[y] || 0) - (b.counts[x] || 0));
+          html += `<div class="space-y-3 border-t border-slate-800 pt-3">
+            <div>
+              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Players &amp; matches played</p>
+              <p class="text-xs text-slate-300">${counts.length ? counts.map(n => `${esc(n)} <span class="text-slate-500">${b.counts[n]}</span>`).join(' · ') : '-'}</p>
+            </div>`;
+          if ((b.teams || []).length) {
+            html += `<div><p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Teams</p>
+              <div class="space-y-0.5">${b.teams.map(t => `<p class="text-xs text-slate-300"><span class="text-sky-400 font-bold">${esc(t.label)}</span> ${esc((t.members || []).join(' & '))}</p>`).join('')}</div></div>`;
+          }
+          html += `<div class="space-y-1.5"><p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Matches</p>`;
+          (b.matches || []).slice().reverse().forEach(m => {
+            const w = (m.winners || []).join(' & '), l = (m.losers || []).join(' & ');
+            html += `<div><p class="text-[10px] text-slate-500">${esc(m.mode)}${m.gameType ? ' · ' + esc(gameTypeLabel(m.gameType)) : ''} · ${esc(m.time)}</p>${matchLine(w, l, w)}</div>`;
+          });
+          if (!(b.matches || []).length) html += '<p class="text-xs text-slate-500 italic">No matches were played.</p>';
+          html += '</div>';
+          if ((b.tournaments || []).length) {
+            html += `<div class="space-y-1"><p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tournaments</p>
+              ${b.tournaments.map(t => `<p class="text-xs text-slate-300">Tournament ${t.number}${t.mode === '2v2' ? ' (2v2)' : ''}: 🥇 ${esc(t.first)} · 🥈 ${esc(t.second)} · 🥉 ${esc(t.third || '-')}</p>`).join('')}</div>`;
+          }
+          html += '</div>';
+        }
+        html += '</div>';
+      });
+      container.innerHTML = html;
+    }
+
+    // ============================================================
+    // STANDINGS BY PERIOD (This Month / This Year / All Time)
+    // ============================================================
+    function switchPeriod(value) {
+      currentPeriod = value || 'all';
+      renderLeaderboard();
+    }
+
+    function periodRange(p) {
+      if (!p || p === 'all') return null;
+      const [kind, val] = p.split(':');
+      if (kind === 'y') { const y = Number(val); return [new Date(y, 0, 1).getTime(), new Date(y + 1, 0, 1).getTime()]; }
+      if (kind === 'm') { const [y, m] = val.split('-').map(Number); return [new Date(y, m - 1, 1).getTime(), new Date(y, m, 1).getTime()]; }
+      return null;
+    }
+    function inRange(ts, r) { return !r || (ts >= r[0] && ts < r[1]); }
+
+    // Calculated from the saved match / tournament records. A player's records from before
+    // their last score reset are ignored, so it matches the "All Time" numbers.
+    function computePeriodStats(board, range, typeFilter) {
+      const out = {};
+      const get = n => out[n] || (out[n] = { played: 0, won: 0, lost: 0, second: 0, third: 0, points: 0 });
+      const skip = (n, id) => { const p = state.players[n]; return !p || (p.statsResetAt && id <= p.statsResetAt); };
+      const typeOk = gt => typeFilter === 'all' || gt === typeFilter;
+
+      if (board === 'tournament') {
+        (state.tournamentHistory || []).forEach(t => {
+          if (!inRange(t.id, range) || !typeOk(t.gameType)) return;
+          const pts = t.points || TOURNAMENT_POINTS;
+          const fm = t.firstMembers || [t.first], sm = t.secondMembers || [t.second], tm = t.thirdMembers || [t.third];
+          (t.participants || []).forEach(n => {
+            if (skip(n, t.id)) return;
+            const s = get(n);
+            s.played++;
+            if (fm.includes(n)) { s.won++; s.points += pts.first; }
+            else if (sm.includes(n)) { s.second++; s.points += pts.second; }
+            else if (tm.includes(n)) { s.third++; s.points += pts.third; }
+          });
+        });
+      } else {
+        (state.matchHistory || []).forEach(m => {
+          if (m.mode !== board || !inRange(m.id, range) || !typeOk(m.gameType)) return;
+          (m.winners || []).forEach(n => { if (skip(n, m.id)) return; const s = get(n); s.played++; s.won++; s.points += MATCH_WIN_POINTS; });
+          (m.losers || []).forEach(n => { if (skip(n, m.id)) return; const s = get(n); s.played++; s.lost++; });
+        });
+      }
+      return out;
+    }
+
+    function renderPeriodOptions() {
+      const sel = document.getElementById('periodSelect');
+      if (!sel) return;
+      const now = new Date();
+      const curY = now.getFullYear(), curM = `${curY}-${now.getMonth() + 1}`;
+      const months = new Set(), years = new Set();
+      const note = ts => { const d = new Date(ts); years.add(d.getFullYear()); months.add(`${d.getFullYear()}-${d.getMonth() + 1}`); };
+      (state.matchHistory || []).forEach(m => note(m.id));
+      (state.tournamentHistory || []).forEach(t => note(t.id));
+      months.delete(curM); years.delete(curY);
+
+      const monthLabel = key => { const [y, m] = key.split('-').map(Number); return new Date(y, m - 1, 1).toLocaleDateString([], { month: 'short', year: 'numeric' }); };
+      const opts = [
+        { v: 'all', t: 'All Time' },
+        { v: `m:${curM}`, t: `This Month (${monthLabel(curM)})` },
+        { v: `y:${curY}`, t: `This Year (${curY})` }
+      ];
+      [...months].sort((a, b) => { const [ya, ma] = a.split('-').map(Number), [yb, mb] = b.split('-').map(Number); return (yb * 12 + mb) - (ya * 12 + ma); })
+        .forEach(k => opts.push({ v: `m:${k}`, t: monthLabel(k) }));
+      [...years].sort((a, b) => b - a).forEach(y => opts.push({ v: `y:${y}`, t: String(y) }));
+      if (!opts.some(o => o.v === currentPeriod)) currentPeriod = 'all';
+
+      const sig = opts.map(o => o.v + '=' + o.t).join('|');
+      if (!sel.dataset) sel.dataset = {};
+      if (sel.dataset.sig !== sig) {
+        sel.innerHTML = opts.map(o => `<option value="${o.v}">${esc(o.t)}</option>`).join('');
+        sel.dataset.sig = sig;
+      }
+      sel.value = currentPeriod;
+    }
+
+
     // --- DELETE RECORDS (Referee) ---
     function subtractDelta(obj, delta) {
       Object.keys(delta).forEach(k => { obj[k] = Math.max(0, (obj[k] || 0) - delta[k]); });
@@ -1447,11 +2299,12 @@
 
       const rec = list[idx];
       const pts = rec.points || TOURNAMENT_POINTS;
+      const fm = rec.firstMembers || [rec.first], sm = rec.secondMembers || [rec.second], tm = rec.thirdMembers || [rec.third];
       (rec.participants || []).forEach(name => {
         let delta = { played: 1 };
-        if (name === rec.first)       delta = { played: 1, won: 1, points: pts.first };
-        else if (name === rec.second) delta = { played: 1, second: 1, points: pts.second };
-        else if (name === rec.third)  delta = { played: 1, third: 1, points: pts.third };
+        if (fm.includes(name))      delta = { played: 1, won: 1, points: pts.first };
+        else if (sm.includes(name)) delta = { played: 1, second: 1, points: pts.second };
+        else if (tm.includes(name)) delta = { played: 1, third: 1, points: pts.third };
         undoStats(name, 'statsTournament', rec.id, rec.gameType || null, delta);
       });
 
@@ -1462,6 +2315,8 @@
         state.tournamentThirdPlace = null;
         state.tournamentCompleted = false;
         state.tournamentGameType = null;
+        state.tournamentMode = '1v1';
+        state.tournamentTeams = [];
       }
       saveState();
     }
@@ -1478,13 +2333,14 @@
         return;
       }
       if (state.tournamentRounds && state.tournamentRounds.length && !state.tournamentCompleted &&
-          state.tournamentRounds.some(r => r.some(m => m.p1 === name || m.p2 === name))) {
+          state.tournamentRounds.some(r => r.some(m => tournamentMembers(m.p1).includes(name) || tournamentMembers(m.p2).includes(name)))) {
         alert(`${name} is in the tournament that is in progress. Finish or clear the bracket first.`);
         return;
       }
       if (!confirm(`Permanently delete ${name} and all their stats? Their past matches stay in History.`)) return;
 
       delete state.players[name];
+      (state.teams || []).forEach(t => { if (t.p1 === name) t.p1 = null; if (t.p2 === name) t.p2 = null; });
       state.rotationQueue = (state.rotationQueue || []).filter(n => n !== name);
       saveState();
       alert(`${name} has been deleted.`);
