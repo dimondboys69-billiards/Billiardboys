@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Billiards Boys - Pool Arena</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            pool: {
+              felt: '#0284c7',
+              darkFelt: '#0369a1',
+              cloth: '#0f172a',
+              card: '#1e293b',
+              rail: '#0284c7',
+              gold: '#f59e0b',
+              eightBall: '#09090b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-pool-cloth text-slate-100 min-h-screen flex flex-col font-sans pb-24">
+
+  <!-- APP CONTAINER -->
+  <div id="app" class="max-w-4xl w-full mx-auto p-4 flex-grow flex flex-col gap-6">
+    
+    <!-- HEADER / LOGO -->
+    <header class="bg-pool-card border-2 border-pool-felt/40 rounded-2xl p-4 shadow-xl flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 bg-pool-felt rounded-xl flex items-center justify-center p-2 shadow-inner border border-white/20">
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+            <rect x="4" y="12" width="56" height="40" rx="6" fill="#0284c7" stroke="#38bdf8" stroke-width="3"/>
+            <circle cx="10" cy="18" r="3" fill="#000"/>
+            <circle cx="54" cy="18" r="3" fill="#000"/>
+            <circle cx="10" cy="46" r="3" fill="#000"/>
+            <circle cx="54" cy="46" r="3" fill="#000"/>
+            <polygon points="36,26 46,32 36,38" fill="none" stroke="#f59e0b" stroke-width="2"/>
+            <circle cx="28" cy="32" r="5" fill="#000" stroke="#fff" stroke-width="1"/>
+            <text x="28" y="34.5" font-size="6" fill="#fff" text-anchor="middle" font-weight="bold">8</text>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-2xl font-black tracking-wider text-sky-400 uppercase">Billiards Boys</h1>
+          <p class="text-xs text-slate-400 font-medium">8-Ball & 9-Ball League Dashboard</p>
+        </div>
+      </div>
+
+      <div id="userInfo" class="hidden flex items-center gap-3 bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-700">
+        <div class="text-right">
+          <p id="currentUserName" class="font-bold text-sm text-slate-200"></p>
+        </div>
+        <button onclick="logout()" class="text-xs bg-red-500/20 hover:bg-red-500/40 text-red-300 font-semibold px-3 py-1.5 rounded-lg transition">Logout</button>
+      </div>
+    </header>
+
+    <!-- AUTH SECTION -->
+    <section id="authSection" class="bg-pool-card border border-slate-700 rounded-2xl p-6 shadow-xl max-w-md mx-auto w-full mt-10">
+      <h2 class="text-xl font-bold mb-4 text-center text-sky-400">Player Access</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold mb-1 text-slate-300">Player Name</label>
+          <input type="text" id="loginName" placeholder="Enter your name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-sky-500"/>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1 text-slate-300">4-Digit Passcode</label>
+          <input type="password" id="loginPasscode" maxlength="4" placeholder="••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-center tracking-widest focus:outline-none focus:border-sky-500"/>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="rememberMe" class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-0"/>
+          <label for="rememberMe" class="text-xs text-slate-300 cursor-pointer">Remember Me</label>
+        </div>
+
+        <button onclick="loginOrRegister()" class="w-full bg-pool-felt hover:bg-sky-600 text-white font-bold py-3 rounded-xl shadow-lg transition">
+          Enter Arena
+        </button>
+      </div>
+    </section>
+
+    <!-- MAIN DASHBOARD -->
+    <main id="mainDashboard" class="hidden flex-grow flex flex-col gap-4">
+
+      <!-- PAGE 1: LOBBY & SCHEDULE -->
+      <div id="pageQueue" class="page-content space-y-4">
+        <section class="bg-pool-card border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+            <h2 class="text-lg font-bold text-sky-400">Table Status</h2>
+            <span id="tableStatusBadge" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Available</span>
+          </div>
+
+          <div class="flex justify-center gap-4 py-2">
+            <button onclick="setGameMode('1v1')" id="btnMode1v1" class="px-5 py-2 rounded-xl text-xs font-bold bg-pool-felt text-white shadow">1v1 Singles</button>
+            <button onclick="setGameMode('2v2')" id="btnMode2v2" class="px-5 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">2v2 Doubles</button>
+          </div>
+
+          <div class="flex justify-center items-center gap-2 pb-1">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Game</span>
+            <button onclick="setGameType('9ball')" id="btnType9ball" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-pool-felt text-white shadow">9-Ball</button>
+            <button onclick="setGameType('8ball')" id="btnType8ball" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">8-Ball</button>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3 pt-2">
+            <button onclick="startNextMatch()" id="startMatchBtn" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition text-sm shadow-md">
+              Start Next Match
+            </button>
+            <button id="shuffleBtn" onclick="toggleShuffleMode()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-4 py-3 rounded-xl border border-slate-600 transition">
+              Mode: <span id="shuffleModeLabel" class="text-sky-400 font-bold">Standard Rotation</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Dynamic Upcoming Matches Schedule -->
+        <section class="bg-pool-card border border-slate-700 rounded-2xl p-5 shadow-xl space-y-3">
+          <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+            <h2 class="text-lg font-bold text-sky-400">Upcoming Match Schedule</h2>
+            <span class="text-[10px] bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded font-mono uppercase">Live Queue</span>
+          </div>
+          <div id="upcomingMatchesList" class="space-y-2"></div>
+        </section>
+
+        <!-- Player Availability Toggle Grid -->
+        <section class="bg-pool-card border border-slate-700 rounded-2xl p-5 shadow-xl space-y-3">
+          <div class="flex justify-between items-center">
+            <h2 id="availableCountTitle" class="text-lg font-bold text-sky-400">Available Players</h2>
+            <p id="availabilityHint" class="text-[11px] text-slate-400 italic">Click player card to toggle Online/Offline</p>
+          </div>
+          <div id="availabilityGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2"></div>
+        </section>
+      </div>
+
+      <!-- PAGE 2: SCOREBOARD -->
+      <div id="pageScoreboard" class="page-content hidden space-y-4">
+        <section class="bg-pool-card border-2 border-sky-500/50 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+          <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></span>
+              <h2 class="text-lg font-bold text-slate-100">Active Game</h2>
+              <span id="activeGameMode" class="text-xs bg-sky-500/20 text-sky-300 px-2.5 py-0.5 rounded-full border border-sky-500/30 uppercase font-semibold">1v1</span>
+              <span id="activeGameType" class="hidden text-xs bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30 uppercase font-semibold"></span>
+            </div>
+            <div id="gameTimer" class="font-mono text-xl font-bold text-amber-400 bg-slate-900 px-3 py-1 rounded-lg border border-slate-700">00:00</div>
+          </div>
+
+          <div id="noActiveGame" class="text-center py-12 text-slate-400 text-sm">
+            No active match in progress.
+          </div>
+
+          <div id="activeGameDisplay" class="hidden space-y-6">
+            <div class="grid grid-cols-2 gap-4 text-center">
+              <div class="bg-slate-900/80 border border-sky-500/30 p-4 rounded-xl shadow-inner">
+                <p id="sideALabel" class="text-xs font-bold text-sky-400 mb-1 uppercase">Side A</p>
+                <p id="sideAPlayers" class="text-lg font-extrabold text-white"></p>
+              </div>
+              <div class="bg-slate-900/80 border border-amber-500/30 p-4 rounded-xl shadow-inner">
+                <p id="sideBLabel" class="text-xs font-bold text-amber-400 mb-1 uppercase">Side B</p>
+                <p id="sideBPlayers" class="text-lg font-extrabold text-white"></p>
+              </div>
+            </div>
+
+            <div id="victoryButtons" class="flex flex-col sm:flex-row gap-3">
+              <button onclick="endMatch('Side A')" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-xl transition shadow-md">
+                Side A Victory 🏆
+              </button>
+              <button onclick="endMatch('Side B')" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl transition shadow-md">
+                Side B Victory 🏆
+              </button>
+            </div>
+            <p id="victoryNote" class="hidden text-center text-xs text-slate-400 italic">🛡️ Only the Referee can record the result.</p>
+          </div>
+        </section>
+      </div>
+
+      <!-- PAGE 3: STANDINGS -->
+      <div id="pageStandings" class="page-content hidden space-y-4">
+        <section class="bg-pool-card border border-slate-700 rounded-2xl p-4 sm:p-5 shadow-xl">
+          <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+            <h2 class="text-lg font-bold text-sky-400">Monthly Standings</h2>
+            <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700 text-xs">
+              <button id="tab1v1" onclick="switchStandingsTab('1v1')" class="px-3 py-1 rounded-md bg-pool-felt text-white font-bold">1v1</button>
+              <button id="tab2v2" onclick="switchStandingsTab('2v2')" class="px-3 py-1 rounded-md text-slate-400">2v2</button>
+              <button id="tabTournament" onclick="switchStandingsTab('tournament')" class="px-3 py-1 rounded-md text-slate-400">🏆 Tournament</button>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 mb-4 text-xs">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Game</span>
+            <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700">
+              <button id="typeAll" onclick="switchStandingsType('all')" class="px-3 py-1 rounded-md bg-pool-felt text-white font-bold">All</button>
+              <button id="type9ball" onclick="switchStandingsType('9ball')" class="px-3 py-1 rounded-md text-slate-400">9-Ball</button>
+              <button id="type8ball" onclick="switchStandingsType('8ball')" class="px-3 py-1 rounded-md text-slate-400">8-Ball</button>
+            </div>
+          </div>
+
+          <div class="w-full overflow-hidden">
+            <table class="w-full text-left text-xs sm:text-sm text-slate-300 table-auto">
+              <thead class="bg-slate-900/60 text-[10px] sm:text-xs uppercase text-slate-400">
+                <tr>
+                  <th class="py-2.5 px-1.5 sm:px-3">Rk</th>
+                  <th class="py-2.5 px-1.5 sm:px-3">Player</th>
+                  <th class="py-2.5 px-1.5 sm:px-3 text-center">Pl</th>
+                  <th id="thCol4" class="py-2.5 px-1.5 sm:px-3 text-center">W/L</th>
+                  <th class="py-2.5 px-1.5 sm:px-3 text-center">Win%</th>
+                  <th class="py-2.5 px-1.5 sm:px-3 text-right">Pts</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboardBody" class="divide-y divide-slate-800"></tbody>
+            </table>
+          </div>
+          <p id="standingsTypeNote" class="hidden text-[10px] text-slate-500 italic mt-3">Matches played before game types were tracked only appear under "All".</p>
+        </section>
+
+        <!-- SCORE MANAGEMENT & RESET PANEL -->
+        <section id="resetPanel" class="bg-pool-card border border-slate-700 rounded-2xl p-5 shadow-xl space-y-3">
+          <h2 class="text-sm font-bold text-amber-400">Score Reset & Management</h2>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-2">
+              <label class="block text-xs font-semibold text-slate-300">Reset Specific Player Score</label>
+              <div class="flex gap-2">
+                <select id="resetPlayerSelect" class="bg-slate-800 border border-slate-700 text-xs rounded-lg p-2 text-white flex-1"></select>
+                <button onclick="confirmResetPlayerScore()" class="bg-red-600/80 hover:bg-red-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition">Reset Score</button>
+              </div>
+            </div>
+            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-2 flex flex-col justify-between">
+              <div>
+                <label class="block text-xs font-semibold text-slate-300">Reset Leaderboard Season</label>
+                <p class="text-[10px] text-slate-400">Clears all player wins, losses, and points back to zero.</p>
+              </div>
+              <button onclick="confirmResetAllScores()" class="w-full bg-red-600/80 hover:bg-red-500 text-white text-xs font-bold py-2 rounded-lg transition">
+                Reset All Scores
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- DELETE PLAYER (Referee) -->
+        <section id="deletePlayerPanel" class="hidden bg-pool-card border border-slate-700 rounded-2xl p-5 shadow-xl space-y-3">
+          <h2 class="text-sm font-bold text-red-400">Delete Player Account</h2>
+          <p class="text-[10px] text-slate-400">Removes the player and their stats from the app. Their past matches stay in History (use the 🗑 Delete button on the History page to remove individual records).</p>
+          <div class="flex gap-2">
+            <select id="deletePlayerSelect" class="bg-slate-800 border border-slate-700 text-xs rounded-lg p-2 text-white flex-1"></select>
+            <button onclick="confirmDeletePlayer()" class="bg-red-600/80 hover:bg-red-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition">Delete Player</button>
+          </div>
+        </section>
+      </div>
+
+      <!-- PAGE 4: TOURNAMENT -->
+      <div id="pageTournament" class="page-content hidden space-y-4">
+        <section class="bg-pool-card border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex flex-wrap justify-between items-center gap-2 border-b border-slate-700 pb-3">
+            <h2 class="text-lg font-bold text-sky-400">Dynamic Tournament Bracket</h2>
+            <div id="tournamentControls" class="flex flex-wrap items-center gap-2">
+              <div class="flex items-center gap-1">
+                <button onclick="setGameType('9ball')" id="tBtnType9ball" class="px-3 py-2 rounded-xl text-xs font-bold bg-pool-felt text-white shadow">9-Ball</button>
+                <button onclick="setGameType('8ball')" id="tBtnType8ball" class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">8-Ball</button>
+              </div>
+              <button onclick="generateTournamentBracket()" id="genBracketBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow">Generate Bracket</button>
+              <button onclick="resetTournament()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs px-3 py-2 rounded-xl transition border border-slate-700">Clear</button>
+            </div>
+          </div>
+          <div id="tournamentBracketContainer" class="space-y-4">
+            <p class="text-xs text-slate-400 italic">Make at least 3 players available and click "Generate Bracket" to start.</p>
+          </div>
+        </section>
+      </div>
+
+      <!-- PAGE 5: PREVIOUS MATCHES -->
+      <div id="pageHistory" class="page-content hidden space-y-4">
+        <section class="bg-pool-card border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex flex-wrap justify-between items-center gap-2 border-b border-slate-700 pb-3">
+            <h2 class="text-lg font-bold text-sky-400">Match History &amp; Results</h2>
+            <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700 text-xs">
+              <button id="histTab1v1" onclick="switchHistoryTab('1v1')" class="px-3 py-1.5 rounded-md bg-pool-felt text-white font-bold">1v1</button>
+              <button id="histTab2v2" onclick="switchHistoryTab('2v2')" class="px-3 py-1.5 rounded-md text-slate-400">2v2</button>
+              <button id="histTabTournament" onclick="switchHistoryTab('tournament')" class="px-3 py-1.5 rounded-md text-slate-400">🏆 Tournament</button>
+            </div>
+          </div>
+          <div id="historyMatchesList" class="space-y-3">
+            <p class="text-xs text-slate-400 italic">No matches logged yet.</p>
+          </div>
+        </section>
+      </div>
+
+    </main>
+
+    <!-- FIXED BOTTOM NAVIGATION BAR -->
+    <nav id="bottomNav" class="hidden fixed bottom-0 left-0 right-0 max-w-4xl mx-auto p-2 bg-pool-card/95 backdrop-blur border-t border-slate-700 grid grid-cols-5 gap-1 z-50 shadow-2xl">
+      <button onclick="switchPage('queue')" id="navQueue" class="flex flex-col items-center py-2 text-[11px] font-bold rounded-xl bg-pool-felt text-white transition">
+        <span class="text-base">👥</span> Lobby
+      </button>
+      <button onclick="switchPage('scoreboard')" id="navScoreboard" class="flex flex-col items-center py-2 text-[11px] font-semibold rounded-xl text-slate-400 hover:text-white transition">
+        <span class="text-base">⏱️</span> Table
+      </button>
+      <button onclick="switchPage('standings')" id="navStandings" class="flex flex-col items-center py-2 text-[11px] font-semibold rounded-xl text-slate-400 hover:text-white transition">
+        <span class="text-base">🏆</span> Rank
+      </button>
+      <button onclick="switchPage('tournament')" id="navTournament" class="flex flex-col items-center py-2 text-[11px] font-semibold rounded-xl text-slate-400 hover:text-white transition">
+        <span class="text-base">⚔️</span> Bracket
+      </button>
+      <button onclick="switchPage('history')" id="navHistory" class="flex flex-col items-center py-2 text-[11px] font-semibold rounded-xl text-slate-400 hover:text-white transition">
+        <span class="text-base">📜</span> History
+      </button>
+    </nav>
+  </div>
+
+  <script>
+    // --- FIREBASE CONFIGURATION ---
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "billiardboys-1a58c.firebaseapp.com",
+      projectId: "billiardboys-1a58c",
+      storageBucket: "billiardboys-1a58c.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // --- GAME TYPES ---
+    const GAME_TYPES = { '9ball': '9-Ball', '8ball': '8-Ball' };
+    const DEFAULT_GAME_TYPE = '9ball';
+    function gameTypeLabel(t) { return GAME_TYPES[t] || ''; }
+    function validGameType(t) { return GAME_TYPES[t] ? t : DEFAULT_GAME_TYPE; }
+
+    // --- REFEREE ACCOUNTS ---
+    // The referee signs in from the normal login box using one of these names + passcode.
+    // Referee accounts are NOT stored in state.players, so they never appear in the lobby,
+    // queue, dropdowns, standings or brackets, and never use up a player slot.
+    // !! CHANGE THE PASSCODE BEFORE SHARING THE APP !!
+    const REFEREE_ACCOUNTS = [
+      { name: 'Referee', passcode: '1234' }
+    ];
+    // WHO CAN DO WHAT?  true = Referee only,  false = everyone (players and Referee).
+    const REFEREE_ONLY = {
+      queue:       false,  // mark players Ready/Away, shuffle mode
+      gameSetup:   false,  // choose 1v1/2v2 and 9-Ball/8-Ball
+      startMatch:  false,  // start the next match
+      endMatch:    false,  // record who won (stop the match)
+      tournament:  false,  // generate/clear bracket and record tournament results
+      resetScores: true,   // reset one player / reset the whole leaderboard
+      deleteRecords: true  // delete match/tournament history records and player accounts
+    };
+    const MATCH_WIN_POINTS = 3;
+    function canDo(action) { return !REFEREE_ONLY[action] || isReferee; }
+
+    function findReferee(name) {
+      const n = String(name || '').trim().toLowerCase();
+      return REFEREE_ACCOUNTS.find(r => r.name.toLowerCase() === n) || null;
+    }
+    function isRefereeName(name) { return !!findReferee(name); }
+
+    // --- APPLICATION STATE ---
+    let state = {
+      players: {}, 
+      rotationQueue: [],
+      activeGame: null, 
+      selectedGameMode: '1v1',
+      shuffleMode: false,
+      matchHistory: [],
+      tournamentRounds: [],
+      tournamentThirdPlace: null,
+      tournamentCompleted: false,
+      tournamentHistory: [],
+      selectedGameType: '9ball',
+      tournamentGameType: null
+    };
+
+    let currentUser = null;
+    let isReferee = false;
+    let currentStandingsType = 'all';
+    let currentStandingsTab = '1v1';
+    let currentHistoryTab = '1v1';
+    let timerInterval = null;
+
+    // --- INITIALIZATION & FIREBASE SYNC ---
+    window.addEventListener('DOMContentLoaded', () => {
+      db.collection('billiards').doc('global_state').onSnapshot(doc => {
+        if (!doc.exists) {
+          saveState();
+          return;
+        }
+        // Our own not-yet-confirmed write: UI was already rendered in saveState()
+        if (doc.metadata.hasPendingWrites) return;
+
+        const data = doc.data();
+        state.players = data.players || {};
+        state.rotationQueue = data.rotationQueue || [];
+        state.activeGame = data.activeGame || null;
+        state.selectedGameMode = data.selectedGameMode || '1v1';
+        state.shuffleMode = data.shuffleMode || false;
+        state.matchHistory = data.matchHistory || [];
+        state.tournamentRounds = parseRounds(data.tournamentRounds);
+        state.tournamentThirdPlace = data.tournamentThirdPlace || null;
+        state.tournamentCompleted = data.tournamentCompleted || false;
+        state.tournamentHistory = data.tournamentHistory || [];
+        state.selectedGameType = validGameType(data.selectedGameType);
+        state.tournamentGameType = data.tournamentGameType || null;
+
+        syncRotationQueue();
+        render();
+      }, err => console.error('Snapshot error:', err));
+
+      const rememberedUser = localStorage.getItem('billiards_user');
+      if (rememberedUser) {
+        setTimeout(() => {
+          const ref = findReferee(rememberedUser);
+          if (ref) {
+            isReferee = true;
+            currentUser = ref.name;
+            setupUserSession(ref.name);
+            render();
+          } else if (state.players && state.players[rememberedUser]) {
+            isReferee = false;
+            currentUser = rememberedUser;
+            setupUserSession(rememberedUser);
+            render();
+          } else {
+            localStorage.removeItem('billiards_user');
+          }
+        }, 300);
+      }
+    });
+
+    // Firestore does NOT allow arrays inside arrays (rounds -> matches),
+    // so the bracket is stored as a JSON string.
+    function parseRounds(raw) {
+      if (!raw) return [];
+      if (Array.isArray(raw)) return raw;
+      try { return JSON.parse(raw) || []; } catch (e) { return []; }
+    }
+
+    function saveState() {
+      // show the change immediately for the person who made it
+      try { render(); } catch (e) { console.error('Render error:', e); }
+
+      try {
+        const payload = JSON.parse(JSON.stringify(state)); // strips undefined values
+        payload.tournamentRounds = JSON.stringify(state.tournamentRounds || []);
+        db.collection('billiards').doc('global_state').set(payload)
+          .catch(err => {
+            console.error('Save error:', err);
+            alert('Could not save to the server. Check your connection / Firebase config.');
+          });
+      } catch (err) {
+        console.error('Save error (sync):', err);
+      }
+    }
+
+    // Every list of players in the app (queue, grid, dropdowns, standings, brackets)
+    // goes through this, so a referee can never show up as a player.
+    function getPlayerNames() {
+      return Object.keys(state.players || {}).filter(n => !isRefereeName(n));
+    }
+
+    function requireAccess(key, action) {
+      if (canDo(key)) return true;
+      alert(`Only the Referee can ${action}.`);
+      return false;
+    }
+
+    function syncRotationQueue() {
+      if (!state.players) state.players = {};
+      const activeAvailable = getPlayerNames().filter(n => state.players[n] && state.players[n].available);
+      if (!state.rotationQueue) state.rotationQueue = [];
+      state.rotationQueue = state.rotationQueue.filter(n => activeAvailable.includes(n));
+      activeAvailable.forEach(n => {
+        if (!state.rotationQueue.includes(n)) {
+          state.rotationQueue.push(n);
+        }
+      });
+    }
+
+    // --- PAGE NAVIGATION ---
+    function switchPage(pageId) {
+      ['queue', 'scoreboard', 'standings', 'tournament', 'history'].forEach(p => {
+        const el = document.getElementById(`page${p.charAt(0).toUpperCase() + p.slice(1)}`);
+        const navEl = document.getElementById(`nav${p.charAt(0).toUpperCase() + p.slice(1)}`);
+        if (el) el.classList.add('hidden');
+        if (navEl) navEl.className = 'flex flex-col items-center py-2 text-[11px] font-semibold rounded-xl text-slate-400 hover:text-white transition';
+      });
+
+      const targetPage = document.getElementById(`page${pageId.charAt(0).toUpperCase() + pageId.slice(1)}`);
+      const targetNav = document.getElementById(`nav${pageId.charAt(0).toUpperCase() + pageId.slice(1)}`);
+      if (targetPage) targetPage.classList.remove('hidden');
+      if (targetNav) targetNav.className = 'flex flex-col items-center py-2 text-[11px] font-bold rounded-xl bg-pool-felt text-white transition';
+    }
+
+    // --- AUTHENTICATION ---
+    function loginOrRegister() {
+      const nameInput = document.getElementById('loginName').value.trim();
+      const code = document.getElementById('loginPasscode').value.trim();
+      const remember = document.getElementById('rememberMe').checked;
+
+      if (!nameInput || code.length !== 4) {
+        alert('Please enter a valid name and 4-digit passcode.');
+        return;
+      }
+
+      // Referee sign-in: never creates or touches a player record.
+      const ref = findReferee(nameInput);
+      if (ref) {
+        if (ref.passcode !== code) {
+          alert('Incorrect passcode for this user!');
+          return;
+        }
+        isReferee = true;
+        currentUser = ref.name;
+        if (remember) localStorage.setItem('billiards_user', ref.name);
+        else localStorage.removeItem('billiards_user');
+        setupUserSession(ref.name);
+        render();
+        return;
+      }
+
+      const lower = nameInput.toLowerCase();
+      if (lower === 'admin' || lower === 'referee') {
+        alert('This username is restricted.');
+        return;
+      }
+
+      let name = nameInput.charAt(0).toUpperCase() + nameInput.slice(1).toLowerCase();
+
+      if (!state.players) state.players = {};
+
+      if (state.players[name]) {
+        if (state.players[name].passcode !== code) {
+          alert('Incorrect passcode for this user!');
+          return;
+        }
+      } else {
+        state.players[name] = {
+          passcode: code,
+          available: false,
+          stats1v1: { played: 0, won: 0, lost: 0, points: 0 },
+          stats2v2: { played: 0, won: 0, lost: 0, points: 0 },
+          statsTournament: { played: 0, won: 0, second: 0, third: 0, points: 0 }
+        };
+      }
+
+      isReferee = false;
+      currentUser = name;
+      if (remember) {
+        localStorage.setItem('billiards_user', name);
+      } else {
+        localStorage.removeItem('billiards_user');
+      }
+
+      saveState();
+      setupUserSession(name);
+      render();
+    }
+
+    function setupUserSession(name) {
+      document.getElementById('authSection').classList.add('hidden');
+      document.getElementById('mainDashboard').classList.remove('hidden');
+      document.getElementById('bottomNav').classList.remove('hidden');
+      document.getElementById('userInfo').classList.remove('hidden');
+      document.getElementById('currentUserName').innerText = isReferee ? `🛡️ ${name}` : name;
+    }
+
+    function logout() {
+      currentUser = null;
+      isReferee = false;
+      localStorage.removeItem('billiards_user');
+      document.getElementById('authSection').classList.remove('hidden');
+      document.getElementById('mainDashboard').classList.add('hidden');
+      document.getElementById('bottomNav').classList.add('hidden');
+      document.getElementById('userInfo').classList.add('hidden');
+      document.getElementById('loginName').value = '';
+      document.getElementById('loginPasscode').value = '';
+      document.getElementById('rememberMe').checked = false;
+    }
+
+    // --- RENDER ROUTINE ---
+    function render() {
+      renderActiveGame();
+      renderUpcomingAndAvailability();
+      renderRoleAndGameType();
+      renderLeaderboard();
+      renderTournamentBracket();
+      renderHistory();
+      renderResetDropdown();
+    }
+
+    function setGameMode(mode) {
+      if (!requireAccess('gameSetup', 'change the game mode')) return;
+      state.selectedGameMode = mode;
+      saveState();
+    }
+
+    // 9-Ball / 8-Ball selector (lobby + tournament page share it)
+    function setGameType(type) {
+      if (!requireAccess('gameSetup', 'change the game type')) return;
+      if (!GAME_TYPES[type]) return;
+      state.selectedGameType = type;
+      saveState();
+    }
+
+    function pillClass(active, padding, enabled) {
+      return `${padding} rounded-xl text-xs font-bold ${active ? 'bg-pool-felt text-white shadow' : 'bg-slate-800 text-slate-400 border border-slate-700'} ${enabled ? '' : 'opacity-60 cursor-not-allowed'}`;
+    }
+
+    // Shows/hides/disables controls depending on who is logged in and REFEREE_ONLY
+    function renderRoleAndGameType() {
+      const t = validGameType(state.selectedGameType);
+      const setupOk = canDo('gameSetup');
+      [['btnType9ball', '9ball', 'px-4 py-1.5'], ['btnType8ball', '8ball', 'px-4 py-1.5'],
+       ['tBtnType9ball', '9ball', 'px-3 py-2'], ['tBtnType8ball', '8ball', 'px-3 py-2']].forEach(([id, key, pad]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.className = pillClass(t === key, pad, setupOk);
+        el.disabled = !setupOk;
+      });
+
+      const show = (id, visible) => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('hidden', !visible);
+      };
+      show('victoryButtons', canDo('endMatch'));
+      show('victoryNote', !canDo('endMatch'));
+      show('resetPanel', canDo('resetScores'));
+      show('deletePlayerPanel', canDo('deleteRecords'));
+      show('tournamentControls', canDo('tournament'));
+
+      const setBtn = (id, allowed) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = !allowed;
+        el.classList.toggle('opacity-50', !allowed);
+        el.classList.toggle('cursor-not-allowed', !allowed);
+      };
+      setBtn('startMatchBtn', canDo('startMatch'));
+      setBtn('shuffleBtn', canDo('queue'));
+
+      const hint = document.getElementById('availabilityHint');
+      if (hint) {
+        hint.innerText = canDo('queue')
+          ? 'Click player card to toggle Online/Offline'
+          : 'Only the Referee can change availability';
+      }
+    }
+
+    function renderActiveGame() {
+      const noGameEl = document.getElementById('noActiveGame');
+      const gameDispEl = document.getElementById('activeGameDisplay');
+      const tableBadge = document.getElementById('tableStatusBadge');
+
+      if (!state.activeGame) {
+        if (noGameEl) noGameEl.classList.remove('hidden');
+        if (gameDispEl) gameDispEl.classList.add('hidden');
+        if (tableBadge) {
+          tableBadge.className = 'text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+          tableBadge.innerText = 'Available';
+        }
+        clearInterval(timerInterval);
+        const timerEl = document.getElementById('gameTimer');
+        if (timerEl) timerEl.innerText = '00:00';
+        return;
+      }
+
+      if (noGameEl) noGameEl.classList.add('hidden');
+      if (gameDispEl) gameDispEl.classList.remove('hidden');
+      if (tableBadge) {
+        tableBadge.className = 'text-xs font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30';
+        tableBadge.innerText = 'In Match';
+      }
+
+      const is1v1 = state.activeGame.mode === '1v1';
+      const modeEl = document.getElementById('activeGameMode');
+      if (modeEl) modeEl.innerText = state.activeGame.mode;
+      const typeEl = document.getElementById('activeGameType');
+      if (typeEl) {
+        const label = gameTypeLabel(state.activeGame.gameType);
+        typeEl.innerText = label;
+        typeEl.classList.toggle('hidden', !label);
+      }
+
+      if (is1v1) {
+        document.getElementById('sideALabel').innerText = 'Player 1';
+        document.getElementById('sideAPlayers').innerText = state.activeGame.sideA[0] || '-';
+        document.getElementById('sideBLabel').innerText = 'Player 2';
+        document.getElementById('sideBPlayers').innerText = state.activeGame.sideB[0] || '-';
+      } else {
+        document.getElementById('sideALabel').innerText = 'Team A';
+        document.getElementById('sideAPlayers').innerText = state.activeGame.sideA.join(' & ');
+        document.getElementById('sideBLabel').innerText = 'Team B';
+        document.getElementById('sideBPlayers').innerText = state.activeGame.sideB.join(' & ');
+      }
+
+      clearInterval(timerInterval);
+      updateTimer();
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function updateTimer() {
+      if (!state.activeGame || !state.activeGame.startTime) return;
+      const elapsedMs = Date.now() - state.activeGame.startTime;
+      const totalSec = Math.floor(elapsedMs / 1000);
+      const mins = String(Math.floor(totalSec / 60)).padStart(2, '0');
+      const secs = String(totalSec % 60).padStart(2, '0');
+      const timerEl = document.getElementById('gameTimer');
+      if (timerEl) timerEl.innerText = `${mins}:${secs}`;
+    }
+
+    function renderUpcomingAndAvailability() {
+      const is1v1 = state.selectedGameMode === '1v1';
+      const btn1v1 = document.getElementById('btnMode1v1');
+      const btn2v2 = document.getElementById('btnMode2v2');
+      if (btn1v1) { btn1v1.className = pillClass(is1v1, 'px-5 py-2', canDo('gameSetup')); btn1v1.disabled = !canDo('gameSetup'); }
+      if (btn2v2) { btn2v2.className = pillClass(!is1v1, 'px-5 py-2', canDo('gameSetup')); btn2v2.disabled = !canDo('gameSetup'); }
+
+      syncRotationQueue();
+      const activeAvailable = state.rotationQueue || [];
+      const countTitle = document.getElementById('availableCountTitle');
+      if (countTitle) countTitle.innerText = `Available Players (${activeAvailable.length})`;
+
+      const upcomingContainer = document.getElementById('upcomingMatchesList');
+      if (upcomingContainer) {
+        upcomingContainer.innerHTML = '';
+        const reqCount = is1v1 ? 2 : 4;
+        if (activeAvailable.length < reqCount) {
+          upcomingContainer.innerHTML = `<p class="text-xs text-slate-400 italic">At least ${reqCount} online/available players are required to schedule matches.</p>`;
+        } else {
+          let queuePool = [...activeAvailable];
+          if (state.shuffleMode) {
+            queuePool.sort(() => Math.random() - 0.5);
+          }
+
+          let matchNumber = 1;
+          for (let i = 0; i < queuePool.length; i += reqCount) {
+            let slice = queuePool.slice(i, i + reqCount);
+            if (slice.length === reqCount && matchNumber <= 3) {
+              const card = document.createElement('div');
+              card.className = 'bg-slate-900 border border-slate-800 p-3 rounded-xl flex justify-between items-center text-xs';
+
+              let matchText = is1v1
+                ? `<span class="font-bold text-sky-400">${esc(slice[0])}</span> <span class="text-slate-500 font-bold px-2">VS</span> <span class="font-bold text-amber-400">${esc(slice[1])}</span>`
+                : `<span class="font-bold text-sky-400">${esc(slice[0])} & ${esc(slice[1])}</span> <span class="text-slate-500 font-bold px-2">VS</span> <span class="font-bold text-amber-400">${esc(slice[2])} & ${esc(slice[3])}</span>`;
+
+              card.innerHTML = `
+                <span class="font-bold text-slate-400">Match #${matchNumber} ${matchNumber === 1 ? '⚡ Next' : ''}</span>
+                <div>${matchText}</div>
+              `;
+              upcomingContainer.appendChild(card);
+              matchNumber++;
+            }
+          }
+        }
+      }
+
+      const grid = document.getElementById('availabilityGrid');
+      if (grid) {
+        grid.innerHTML = '';
+        getPlayerNames().forEach(name => {
+          const p = state.players[name];
+          const canToggle = canDo('queue');
+          const btn = document.createElement('button');
+          btn.onclick = () => toggleAvailability(name);
+          btn.disabled = !canToggle;
+
+          btn.className = `p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center justify-between transition ${canToggle ? '' : 'cursor-default'} ${
+            p.available
+              ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-300'
+              : 'bg-slate-900 border-slate-800 text-slate-500'
+          }`;
+
+          btn.innerHTML = `
+            <span>${esc(name)}</span>
+            <span class="text-[10px] mt-1 ${p.available ? 'text-emerald-400' : 'text-slate-600'}">
+              ${p.available ? '● Ready' : '○ Away'}
+            </span>
+          `;
+          grid.appendChild(btn);
+        });
+      }
+
+      const shuffleLabel = document.getElementById('shuffleModeLabel');
+      if (shuffleLabel) shuffleLabel.innerText = state.shuffleMode ? 'Random Shuffle' : 'Standard Rotation';
+    }
+
+    function toggleAvailability(name) {
+      if (isRefereeName(name)) return;
+      if (!requireAccess('queue', 'change who is in the queue')) return;
+      if (state.players && state.players[name]) {
+        state.players[name].available = !state.players[name].available;
+        syncRotationQueue();
+        saveState();
+      }
+    }
+
+    function toggleShuffleMode() {
+      if (!requireAccess('queue', 'change the queue order mode')) return;
+      state.shuffleMode = !state.shuffleMode;
+      saveState();
+    }
+
+    function startNextMatch() {
+      if (!requireAccess('startMatch', 'start a match')) return;
+      if (state.activeGame) {
+        alert('A match is already in progress!');
+        return;
+      }
+
+      const mode = state.selectedGameMode;
+      const gameType = validGameType(state.selectedGameType);
+      const reqCount = mode === '1v1' ? 2 : 4;
+
+      syncRotationQueue();
+      if (!state.rotationQueue || state.rotationQueue.length < reqCount) {
+        alert(`Need at least ${reqCount} ready players to start a ${mode} game.`);
+        return;
+      }
+
+      let selected = state.rotationQueue.slice(0, reqCount);
+      state.rotationQueue = state.rotationQueue.slice(reqCount).concat(selected);
+
+      if (mode === '1v1') {
+        state.activeGame = {
+          mode: '1v1',
+          gameType,
+          sideA: [selected[0]],
+          sideB: [selected[1]],
+          startTime: Date.now()
+        };
+      } else {
+        state.activeGame = {
+          mode: '2v2',
+          gameType,
+          sideA: [selected[0], selected[1]],
+          sideB: [selected[2], selected[3]],
+          startTime: Date.now()
+        };
+      }
+
+      saveState();
+      switchPage('scoreboard');
+    }
+
+    function endMatch(winningSide) {
+      if (!requireAccess('endMatch', 'end a match')) return;
+      if (!state.activeGame) return;
+
+      const game = state.activeGame;
+      const isAWin = winningSide === 'Side A';
+      const winners = isAWin ? game.sideA : game.sideB;
+      const losers = isAWin ? game.sideB : game.sideA;
+      const statKey = game.mode === '1v1' ? 'stats1v1' : 'stats2v2';
+      const gameType = game.gameType || null; // matches started before this update have no type
+
+      winners.forEach(name => {
+        const p = state.players[name];
+        if (!p) return;
+        if (!p[statKey]) p[statKey] = { played: 0, won: 0, lost: 0, points: 0 };
+        recordStats(p[statKey], gameType, { played: 1, won: 1, points: MATCH_WIN_POINTS });
+      });
+
+      losers.forEach(name => {
+        const p = state.players[name];
+        if (!p) return;
+        if (!p[statKey]) p[statKey] = { played: 0, won: 0, lost: 0, points: 0 };
+        recordStats(p[statKey], gameType, { played: 1, lost: 1 });
+      });
+
+      if (!state.matchHistory) state.matchHistory = [];
+      state.matchHistory.unshift({
+        id: Date.now(),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        mode: game.mode,
+        gameType: gameType,
+        winners: winners,
+        losers: losers
+      });
+
+      state.activeGame = null;
+      saveState();
+      switchPage('standings');
+    }
+
+    // --- TOURNAMENT BRACKET GENERATION ---
+    function generateTournamentBracket() {
+      if (!requireAccess('tournament', 'generate a tournament bracket')) return;
+      if (state.tournamentRounds && state.tournamentRounds.length > 0 && !state.tournamentCompleted) {
+        if (!confirm('A tournament is still in progress. Replace it with a new bracket? (Unfinished tournaments are not saved to History.)')) return;
+      }
+      let names = getPlayerNames().filter(n => state.players[n] && state.players[n].available);
+      if (names.length < 3) {
+        names = getPlayerNames();
+      }
+      if (names.length < 3) {
+        alert('You need at least 3 registered players to generate a tournament bracket.');
+        return;
+      }
+
+      const shuffled = [...names].sort(() => Math.random() - 0.5);
+      const total = shuffled.length;
+
+      // largest power of 2 that fits
+      let size = 1;
+      while (size * 2 <= total) size *= 2;
+
+      const playIns = total - size;               // number of play-in matches
+      const playInPlayers = shuffled.slice(0, playIns * 2);
+      const byePlayers = shuffled.slice(playIns * 2);
+
+      const mk = (id, p1, p2) => ({ id, p1: p1 || 'TBD', p2: p2 || 'TBD', winner: null, loser: null });
+      const rounds = [];
+
+      // Play-in round (only if player count is not a power of 2)
+      if (playIns > 0) {
+        const r = [];
+        for (let i = 0; i < playInPlayers.length; i += 2) {
+          r.push(mk(r.length + 1, playInPlayers[i], playInPlayers[i + 1]));
+        }
+        rounds.push(r);
+      }
+
+      // Main bracket: slots = play-in winners (TBD) first, then bye players
+      const slots = [];
+      for (let i = 0; i < playIns; i++) slots.push(null);
+      byePlayers.forEach(p => slots.push(p));
+
+      let matchCount = size / 2;
+      let firstMain = [];
+      for (let i = 0; i < matchCount; i++) {
+        firstMain.push(mk(i + 1, slots[i * 2], slots[i * 2 + 1]));
+      }
+      rounds.push(firstMain);
+
+      // later rounds, all TBD until winners advance
+      while (matchCount > 1) {
+        matchCount = matchCount / 2;
+        const r = [];
+        for (let i = 0; i < matchCount; i++) r.push(mk(i + 1, null, null));
+        rounds.push(r);
+      }
+
+      state.tournamentRounds = rounds;
+      state.tournamentThirdPlace = null;
+      state.tournamentCompleted = false;
+      state.tournamentGameType = validGameType(state.selectedGameType);
+
+      saveState();
+    }
+
+    function resetTournament() {
+      if (!requireAccess('tournament', 'clear the tournament bracket')) return;
+      if (!confirm('Clear the current tournament bracket?')) return;
+      state.tournamentRounds = [];
+      state.tournamentThirdPlace = null;
+      state.tournamentCompleted = false;
+      state.tournamentGameType = null;
+      saveState();
+    }
+
+    // ============================================================
+    // TOURNAMENT RESULTS, STANDINGS & HISTORY
+    // ============================================================
+    // Points awarded to the top 3 when a tournament is finished.
+    // Change these numbers if you want different rewards.
+    const TOURNAMENT_POINTS = { first: 10, second: 6, third: 3 };
+
+    function esc(v) {
+      return String(v === undefined || v === null ? '' : v)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function getTStats(player) {
+      if (!player.statsTournament) {
+        player.statsTournament = { played: 0, won: 0, second: 0, third: 0, points: 0 };
+      }
+      return player.statsTournament;
+    }
+
+    function applyDelta(obj, delta) {
+      Object.keys(delta).forEach(k => { obj[k] = (obj[k] || 0) + delta[k]; });
+    }
+
+    // Adds to the overall total and, when the game type is known, to that type's own counters.
+    function recordStats(stats, gameType, delta) {
+      applyDelta(stats, delta);
+      if (gameType && GAME_TYPES[gameType]) {
+        if (!stats.byType) stats.byType = {};
+        if (!stats.byType[gameType]) stats.byType[gameType] = {};
+        applyDelta(stats.byType[gameType], delta);
+      }
+    }
+
+    // typeFilter: 'all' | '9ball' | '8ball'
+    function readStats(stats, typeFilter) {
+      const zero = { played: 0, won: 0, lost: 0, second: 0, third: 0, points: 0 };
+      if (!stats) return zero;
+      if (typeFilter === 'all') return { ...zero, ...stats };
+      return { ...zero, ...((stats.byType && stats.byType[typeFilter]) || {}) };
+    }
+
+    // Does the first round of the bracket act as a play-in round?
+    function bracketHasPlayIn(rounds) {
+      return rounds.length > 1 && rounds[0].length !== rounds[1].length * 2;
+    }
+
+    function roundTitle(rounds, rIdx) {
+      const count = rounds[rIdx].length;
+      if (rIdx === rounds.length - 1 && count === 1) return '🏆 Grand Finals';
+      const playIn = bracketHasPlayIn(rounds);
+      if (playIn && rIdx === 0) return 'Play-in Round';
+      if (count === 2) return 'Semi Finals';
+      if (count === 4) return 'Quarter Finals';
+      return `Round ${rIdx - (playIn ? 1 : 0) + 1}`;
+    }
+
+    function setDynamicWinner(roundIdx, matchIdx, side) {
+      if (!requireAccess('tournament', 'record a tournament result')) return;
+      const rounds = state.tournamentRounds;
+      if (!rounds || !rounds[roundIdx]) return;
+
+      const m = rounds[roundIdx][matchIdx];
+      if (!m || m.winner) return;
+      const winnerName = side === 1 ? m.p1 : m.p2;
+      if (!winnerName || winnerName === 'TBD') return;
+
+      m.winner = winnerName;
+      m.loser = side === 1 ? m.p2 : m.p1;
+
+      // advance the winner: match i feeds slot i of the next round
+      if (roundIdx < rounds.length - 1) {
+        const target = rounds[roundIdx + 1][Math.floor(matchIdx / 2)];
+        if (target) {
+          if (matchIdx % 2 === 0) target.p1 = winnerName; else target.p2 = winnerName;
+        }
+      }
+
+      // 3rd place playoff appears once both semi-finals are decided
+      if (rounds.length >= 2) {
+        const semi = rounds[rounds.length - 2];
+        if (semi.length === 2 && semi.every(x => x.winner) && !state.tournamentThirdPlace) {
+          state.tournamentThirdPlace = { p1: semi[0].loser, p2: semi[1].loser, winner: null };
+        }
+      }
+
+      checkTournamentCompletion();
+      saveState();
+    }
+
+    function setThirdPlaceWinner(side) {
+      if (!requireAccess('tournament', 'record a tournament result')) return;
+      const t = state.tournamentThirdPlace;
+      if (!t || t.winner) return;
+      const name = side === 1 ? t.p1 : t.p2;
+      if (!name || name === 'TBD') return;
+      t.winner = name;
+
+      checkTournamentCompletion();
+      saveState();
+    }
+
+    // When the final AND the 3rd-place game are decided:
+    //  - award points to the top 3
+    //  - update "tournaments played / won" for everyone who took part
+    //  - save the whole tournament in the History page
+    function checkTournamentCompletion() {
+      const rounds = state.tournamentRounds;
+      if (!rounds || rounds.length === 0 || state.tournamentCompleted) return;
+
+      const finalRound = rounds[rounds.length - 1];
+      if (finalRound.length !== 1 || !finalRound[0].winner) return;
+      const finalMatch = finalRound[0];
+
+      let third = null;
+      const before = rounds.length >= 2 ? rounds[rounds.length - 2] : null;
+      if (before && before.length === 2) {
+        // normal case: wait for the 3rd place playoff result
+        if (!state.tournamentThirdPlace || !state.tournamentThirdPlace.winner) return;
+        third = state.tournamentThirdPlace.winner;
+      } else if (before && before.length === 1) {
+        // 3-player tournament: the loser of the first match finishes 3rd
+        third = before[0].loser;
+      }
+
+      const first = finalMatch.winner;
+      const second = finalMatch.loser;
+
+      const participants = new Set();
+      rounds.forEach(r => r.forEach(m => {
+        [m.p1, m.p2].forEach(p => { if (p && p !== 'TBD') participants.add(p); });
+      }));
+
+      const gameType = state.tournamentGameType || null;
+      participants.forEach(name => {
+        const p = state.players[name];
+        if (!p) return;
+        const t = getTStats(p);
+        if (name === first)       recordStats(t, gameType, { played: 1, won: 1, points: TOURNAMENT_POINTS.first });
+        else if (name === second) recordStats(t, gameType, { played: 1, second: 1, points: TOURNAMENT_POINTS.second });
+        else if (name === third)  recordStats(t, gameType, { played: 1, third: 1, points: TOURNAMENT_POINTS.third });
+        else                      recordStats(t, gameType, { played: 1 });
+      });
+
+      if (!state.tournamentHistory) state.tournamentHistory = [];
+      const clean = m => ({ id: m.id, p1: m.p1, p2: m.p2, winner: m.winner || null, loser: m.loser || null });
+      const tp = state.tournamentThirdPlace;
+
+      state.tournamentHistory.unshift({
+        id: Date.now(),
+        number: state.tournamentHistory.reduce((mx, t) => Math.max(mx, t.number || 0), 0) + 1,
+        time: new Date().toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
+        gameType,
+        points: { ...TOURNAMENT_POINTS },
+        first, second, third,
+        participants: [...participants],
+        rounds: rounds.map((r, i) => ({ title: roundTitle(rounds, i), matches: r.map(clean) })),
+        thirdPlace: tp ? { p1: tp.p1, p2: tp.p2, winner: tp.winner || null } : null
+      });
+
+      state.tournamentCompleted = true;
+    }
+
+    function renderTournamentBracket() {
+      const container = document.getElementById('tournamentBracketContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (!state.tournamentRounds || state.tournamentRounds.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-400 italic">Make at least 3 players available and click "Generate Bracket" to start.</p>';
+        return;
+      }
+
+      const rounds = state.tournamentRounds;
+      const btnBase = 'p-2 rounded-lg font-bold border transition disabled:cursor-not-allowed';
+      const typeLabel = gameTypeLabel(state.tournamentGameType);
+      let html = `<div class="space-y-4">`;
+      if (typeLabel) {
+        html += `<div class="flex items-center gap-2 text-xs">
+          <span class="text-slate-400">Game type:</span>
+          <span class="bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30 uppercase font-semibold">${esc(typeLabel)}</span>
+        </div>`;
+      }
+
+      rounds.forEach((roundMatches, rIdx) => {
+        html += `<div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700 space-y-3">
+          <h3 class="text-xs font-bold text-sky-400 uppercase tracking-wider">${esc(roundTitle(rounds, rIdx))}</h3>
+          <div class="grid sm:grid-cols-2 gap-3">`;
+
+        roundMatches.forEach((m, mIdx) => {
+          const p1Ready = m.p1 && m.p1 !== 'TBD';
+          const p2Ready = m.p2 && m.p2 !== 'TBD';
+          const locked = !canDo('tournament') || !p1Ready || !p2Ready || m.winner;
+
+          html += `<div class="bg-slate-800 p-3 rounded-lg border border-slate-700 space-y-2">
+            <div class="flex justify-between text-[11px] text-slate-400 font-semibold">
+              <span>Match #${m.id}</span>
+              ${!p1Ready || !p2Ready ? '<span class="text-amber-400">WAITING FOR PREV ROUND</span>' : ''}
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-center text-xs">
+              <button ${locked ? 'disabled' : ''} onclick="setDynamicWinner(${rIdx}, ${mIdx}, 1)" class="${btnBase} ${m.winner && m.winner === m.p1 ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-slate-900 text-slate-200 border-slate-700 hover:border-sky-500'}">${esc(m.p1)}</button>
+              <button ${locked ? 'disabled' : ''} onclick="setDynamicWinner(${rIdx}, ${mIdx}, 2)" class="${btnBase} ${m.winner && m.winner === m.p2 ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-slate-900 text-slate-200 border-slate-700 hover:border-sky-500'}">${esc(m.p2)}</button>
+            </div>
+          </div>`;
+        });
+        html += `</div></div>`;
+      });
+
+      const tp = state.tournamentThirdPlace;
+      if (tp) {
+        html += `<div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700 space-y-3">
+          <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider">🥉 3rd Place Playoff</h3>
+          <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 space-y-2">
+            <div class="grid grid-cols-2 gap-2 text-center text-xs">
+              <button ${(tp.winner || !canDo('tournament')) ? 'disabled' : ''} onclick="setThirdPlaceWinner(1)" class="p-2.5 rounded-lg font-bold border transition disabled:cursor-not-allowed ${tp.winner === tp.p1 ? 'bg-sky-600 text-white border-sky-500' : 'bg-slate-900 text-slate-200 border-slate-700 hover:border-sky-500'}">${esc(tp.p1)}</button>
+              <button ${(tp.winner || !canDo('tournament')) ? 'disabled' : ''} onclick="setThirdPlaceWinner(2)" class="p-2.5 rounded-lg font-bold border transition disabled:cursor-not-allowed ${tp.winner === tp.p2 ? 'bg-sky-600 text-white border-sky-500' : 'bg-slate-900 text-slate-200 border-slate-700 hover:border-sky-500'}">${esc(tp.p2)}</button>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      if (state.tournamentCompleted && state.tournamentHistory && state.tournamentHistory.length) {
+        const last = state.tournamentHistory[0];
+        html += `<div class="p-4 bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 text-center rounded-xl text-xs space-y-1">
+          <p class="font-bold text-sm">🎉 Tournament Complete!</p>
+          <p>🥇 ${esc(last.first)} (+${TOURNAMENT_POINTS.first}) &nbsp; 🥈 ${esc(last.second)} (+${TOURNAMENT_POINTS.second}) &nbsp; 🥉 ${esc(last.third)} (+${TOURNAMENT_POINTS.third})</p>
+          <p class="text-emerald-400/80">Saved to History as Tournament #${last.number}. Points added to the standings.</p>
+        </div>`;
+      }
+
+      html += `</div>`;
+      container.innerHTML = html;
+    }
+
+    // --- HISTORY PAGE (1v1 / 2v2 / Tournament tabs) ---
+    function switchHistoryTab(tab) {
+      currentHistoryTab = tab;
+      renderHistory();
+    }
+
+    function matchLine(p1, p2, winner) {
+      const cls = n => n && n === winner
+        ? 'text-amber-400 font-bold'
+        : 'text-slate-500 line-through';
+      const mark = n => n && n === winner ? '🏆 ' : '';
+      return `<div class="flex justify-between items-center bg-slate-800/70 rounded-lg px-3 py-2 text-xs">
+        <span class="${winner ? cls(p1) : 'text-slate-200'}">${mark(p1)}${esc(p1)}</span>
+        <span class="text-slate-600 font-bold px-2">VS</span>
+        <span class="${winner ? cls(p2) : 'text-slate-200'}">${mark(p2)}${esc(p2)}</span>
+      </div>`;
+    }
+
+    function renderHistory() {
+      const container = document.getElementById('historyMatchesList');
+      if (!container) return;
+
+      const tabs = { '1v1': 'histTab1v1', '2v2': 'histTab2v2', 'tournament': 'histTabTournament' };
+      Object.keys(tabs).forEach(k => {
+        const el = document.getElementById(tabs[k]);
+        if (el) el.className = k === currentHistoryTab
+          ? 'px-3 py-1.5 rounded-md bg-pool-felt text-white font-bold'
+          : 'px-3 py-1.5 rounded-md text-slate-400';
+      });
+
+      container.innerHTML = '';
+
+      if (currentHistoryTab === 'tournament') {
+        const list = state.tournamentHistory || [];
+        if (list.length === 0) {
+          container.innerHTML = '<p class="text-xs text-slate-400 italic">No tournaments completed yet. Finish a bracket (including the 3rd place game) and it will appear here.</p>';
+          return;
+        }
+        list.forEach(t => {
+          let html = `<div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+              <h3 class="text-sm font-black text-sky-400 uppercase">Tournament ${t.number}${t.gameType ? ' · ' + esc(gameTypeLabel(t.gameType)) : ''}</h3>
+              <span class="flex items-center gap-2 text-[11px] text-slate-400">${esc(t.time)} · ${(t.participants || []).length} players
+                ${canDo('deleteRecords') ? `<button onclick="deleteTournamentRecord(${Number(t.id)})" class="bg-red-600/80 hover:bg-red-500 text-white font-bold px-2 py-1 rounded-lg">🗑 Delete</button>` : ''}
+              </span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-center text-[11px]">
+              <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2"><p>🥇</p><p class="font-bold text-amber-300">${esc(t.first)}</p></div>
+              <div class="bg-slate-400/10 border border-slate-500/40 rounded-lg p-2"><p>🥈</p><p class="font-bold text-slate-200">${esc(t.second)}</p></div>
+              <div class="bg-orange-700/10 border border-orange-700/40 rounded-lg p-2"><p>🥉</p><p class="font-bold text-orange-300">${esc(t.third)}</p></div>
+            </div>`;
+
+          (t.rounds || []).forEach(r => {
+            html += `<div class="space-y-1.5">
+              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">${esc(r.title)}</p>`;
+            (r.matches || []).forEach(m => { html += matchLine(m.p1, m.p2, m.winner); });
+            html += `</div>`;
+          });
+
+          if (t.thirdPlace) {
+            html += `<div class="space-y-1.5">
+              <p class="text-[11px] font-bold text-amber-400 uppercase tracking-wider">🥉 3rd Place Playoff</p>
+              ${matchLine(t.thirdPlace.p1, t.thirdPlace.p2, t.thirdPlace.winner)}
+            </div>`;
+          }
+
+          html += `</div>`;
+          container.insertAdjacentHTML('beforeend', html);
+        });
+        return;
+      }
+
+      const list = (state.matchHistory || []).filter(m => m.mode === currentHistoryTab);
+      if (list.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 italic">No ${currentHistoryTab} matches recorded yet.</p>`;
+        return;
+      }
+
+      list.forEach(m => {
+        const item = document.createElement('div');
+        item.className = 'bg-slate-900 border border-slate-800 p-3.5 rounded-xl space-y-2 text-xs';
+        const winText = (m.winners || []).join(' & ');
+        const loseText = (m.losers || []).join(' & ');
+        item.innerHTML = `
+          <div class="flex justify-between text-[11px] text-slate-400 font-semibold border-b border-slate-800 pb-1.5">
+            <span class="text-sky-400 uppercase font-bold">${esc(m.mode)} Game${m.gameType ? ' · ' + esc(gameTypeLabel(m.gameType)) : ''}</span>
+            <span class="flex items-center gap-2">Logged at ${esc(m.time)}
+              ${canDo('deleteRecords') ? `<button onclick="deleteMatchRecord(${Number(m.id)})" class="bg-red-600/80 hover:bg-red-500 text-white font-bold px-2 py-1 rounded-lg">🗑 Delete</button>` : ''}
+            </span>
+          </div>
+          <div class="flex justify-between items-center pt-1">
+            <div class="font-bold text-amber-400 flex items-center gap-1.5"><span>🏆 ${esc(winText)}</span></div>
+            <div class="text-slate-500 line-through">${esc(loseText)}</div>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // --- STANDINGS & LEADERBOARD ---
+    function switchStandingsTab(mode) {
+      currentStandingsTab = mode;
+      renderLeaderboard();
+    }
+
+    function switchStandingsType(type) {
+      currentStandingsType = type;
+      renderLeaderboard();
+    }
+
+    function renderLeaderboard() {
+      const tbody = document.getElementById('leaderboardBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      const isT = currentStandingsTab === 'tournament';
+      const tabIds = { '1v1': 'tab1v1', '2v2': 'tab2v2', 'tournament': 'tabTournament' };
+      Object.keys(tabIds).forEach(k => {
+        const el = document.getElementById(tabIds[k]);
+        if (el) el.className = k === currentStandingsTab
+          ? 'px-3 py-1 rounded-md bg-pool-felt text-white font-bold'
+          : 'px-3 py-1 rounded-md text-slate-400';
+      });
+      const typeIds = { 'all': 'typeAll', '9ball': 'type9ball', '8ball': 'type8ball' };
+      Object.keys(typeIds).forEach(k => {
+        const el = document.getElementById(typeIds[k]);
+        if (el) el.className = k === currentStandingsType
+          ? 'px-3 py-1 rounded-md bg-pool-felt text-white font-bold'
+          : 'px-3 py-1 rounded-md text-slate-400';
+      });
+      const note = document.getElementById('standingsTypeNote');
+      if (note) note.classList.toggle('hidden', currentStandingsType === 'all');
+      const th4 = document.getElementById('thCol4');
+      if (th4) th4.innerText = isT ? '🥇/🥈/🥉' : 'W/L';
+
+      const statKey = currentStandingsTab === '2v2' ? 'stats2v2' : 'stats1v1';
+
+      const sorted = getPlayerNames().map(name => {
+        const p = state.players[name] || {};
+        const raw = isT ? getTStats(p) : (p[statKey] || null);
+        const stats = readStats(raw, currentStandingsType);
+        const winRate = stats.played > 0 ? ((stats.won / stats.played) * 100).toFixed(1) : '0.0';
+        return { name, stats, winRate };
+      }).sort((a, b) => b.stats.points - a.stats.points || parseFloat(b.winRate) - parseFloat(a.winRate) || b.stats.won - a.stats.won);
+
+      sorted.forEach((item, idx) => {
+        const col4 = isT
+          ? `${item.stats.won}/${item.stats.second}/${item.stats.third}`
+          : `${item.stats.won}/${item.stats.lost}`;
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/40 transition';
+        tr.innerHTML = `
+          <td class="py-2.5 px-1.5 sm:px-3 font-bold text-slate-400">#${idx + 1}</td>
+          <td class="py-2.5 px-1.5 sm:px-3 font-semibold text-white truncate max-w-[90px] sm:max-w-none">${esc(item.name)}</td>
+          <td class="py-2.5 px-1.5 sm:px-3 text-center text-slate-400">${item.stats.played}</td>
+          <td class="py-2.5 px-1.5 sm:px-3 text-center text-emerald-400 font-bold">${col4}</td>
+          <td class="py-2.5 px-1.5 sm:px-3 text-center text-sky-300 font-bold">${item.winRate}%</td>
+          <td class="py-2.5 px-1.5 sm:px-3 text-right font-black text-amber-400">${item.stats.points}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // --- RESET CONTROLS ---
+    function renderResetDropdown() {
+      ['resetPlayerSelect', 'deletePlayerSelect'].forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        const keep = sel.value;
+        sel.innerHTML = '';
+        getPlayerNames().forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.innerText = name;
+          sel.appendChild(opt);
+        });
+        if (keep) sel.value = keep;
+      });
+    }
+
+    function blankStats(p) {
+      p.stats1v1 = { played: 0, won: 0, lost: 0, points: 0 };
+      p.stats2v2 = { played: 0, won: 0, lost: 0, points: 0 };
+      p.statsTournament = { played: 0, won: 0, second: 0, third: 0, points: 0 };
+      p.statsResetAt = Date.now();
+    }
+
+    function confirmResetPlayerScore() {
+      if (!requireAccess('resetScores', 'reset scores')) return;
+      const name = document.getElementById('resetPlayerSelect').value;
+      if (!name || isRefereeName(name)) return;
+      if (!confirm(`Reset scores for ${name}?`)) return;
+      if (state.players[name]) {
+        blankStats(state.players[name]);
+        saveState();
+        alert(`Successfully reset stats for ${name}.`);
+      }
+    }
+
+    function confirmResetAllScores() {
+      if (!requireAccess('resetScores', 'reset scores')) return;
+      if (!confirm('Reset ALL player scores across the leaderboard?')) return;
+      getPlayerNames().forEach(name => blankStats(state.players[name]));
+      saveState();
+      alert('All player scores have been successfully reset.');
+    }
+
+    // --- DELETE RECORDS (Referee) ---
+    function subtractDelta(obj, delta) {
+      Object.keys(delta).forEach(k => { obj[k] = Math.max(0, (obj[k] || 0) - delta[k]); });
+    }
+
+    // Takes one record's effect back out of a player's stats (overall + per game type).
+    // Skipped if that player's stats were reset after the record was made.
+    function undoStats(name, statKey, recordId, gameType, delta) {
+      const p = state.players[name];
+      if (!p) return;
+      if (p.statsResetAt && recordId <= p.statsResetAt) return;
+      const stats = p[statKey];
+      if (!stats) return;
+      subtractDelta(stats, delta);
+      if (gameType && stats.byType && stats.byType[gameType]) subtractDelta(stats.byType[gameType], delta);
+    }
+
+    function deleteMatchRecord(id) {
+      if (!requireAccess('deleteRecords', 'delete records')) return;
+      const list = state.matchHistory || [];
+      const idx = list.findIndex(m => m.id === id);
+      if (idx === -1) return;
+      if (!confirm('Delete this match record? Its wins, losses and points will also be removed from the standings.')) return;
+
+      const rec = list[idx];
+      const statKey = rec.mode === '1v1' ? 'stats1v1' : 'stats2v2';
+      const gt = rec.gameType || null;
+      (rec.winners || []).forEach(n => undoStats(n, statKey, rec.id, gt, { played: 1, won: 1, points: MATCH_WIN_POINTS }));
+      (rec.losers || []).forEach(n => undoStats(n, statKey, rec.id, gt, { played: 1, lost: 1 }));
+
+      list.splice(idx, 1);
+      saveState();
+    }
+
+    function deleteTournamentRecord(id) {
+      if (!requireAccess('deleteRecords', 'delete records')) return;
+      const list = state.tournamentHistory || [];
+      const idx = list.findIndex(t => t.id === id);
+      if (idx === -1) return;
+      if (!confirm('Delete this tournament record? Its points and tournament stats will also be removed from the standings.')) return;
+
+      const rec = list[idx];
+      const pts = rec.points || TOURNAMENT_POINTS;
+      (rec.participants || []).forEach(name => {
+        let delta = { played: 1 };
+        if (name === rec.first)       delta = { played: 1, won: 1, points: pts.first };
+        else if (name === rec.second) delta = { played: 1, second: 1, points: pts.second };
+        else if (name === rec.third)  delta = { played: 1, third: 1, points: pts.third };
+        undoStats(name, 'statsTournament', rec.id, rec.gameType || null, delta);
+      });
+
+      list.splice(idx, 1);
+      // the finished bracket on the Bracket page belongs to the newest record
+      if (idx === 0 && state.tournamentCompleted) {
+        state.tournamentRounds = [];
+        state.tournamentThirdPlace = null;
+        state.tournamentCompleted = false;
+        state.tournamentGameType = null;
+      }
+      saveState();
+    }
+
+    function confirmDeletePlayer() {
+      if (!requireAccess('deleteRecords', 'delete players')) return;
+      const sel = document.getElementById('deletePlayerSelect');
+      const name = sel && sel.value;
+      if (!name || isRefereeName(name) || !state.players[name]) return;
+
+      const g = state.activeGame;
+      if (g && [...(g.sideA || []), ...(g.sideB || [])].includes(name)) {
+        alert(`${name} is in the match that is being played. End the match first.`);
+        return;
+      }
+      if (state.tournamentRounds && state.tournamentRounds.length && !state.tournamentCompleted &&
+          state.tournamentRounds.some(r => r.some(m => m.p1 === name || m.p2 === name))) {
+        alert(`${name} is in the tournament that is in progress. Finish or clear the bracket first.`);
+        return;
+      }
+      if (!confirm(`Permanently delete ${name} and all their stats? Their past matches stay in History.`)) return;
+
+      delete state.players[name];
+      state.rotationQueue = (state.rotationQueue || []).filter(n => n !== name);
+      saveState();
+      alert(`${name} has been deleted.`);
+    }
+  </script>
+</body>
+</html>
