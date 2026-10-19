@@ -859,8 +859,14 @@
       if (isRefereeName(name)) return;
       if (!requireAccess('queue', 'change who is in the queue')) return;
       if (state.players && state.players[name]) {
+        const wasKnown = !!(state.session && state.session.order && state.session.order.includes(name));
         state.players[name].available = !state.players[name].available;
-        if (state.players[name].available) onPlayerReady(name);
+        if (state.players[name].available) {
+          onPlayerReady(name);
+          // a latecomer goes to the front of the line: rebuild the shown draw so they play next
+          // (unless somebody already changed the draw by hand)
+          if (!wasKnown && state.session.seq > 0 && state.shuffleDraw && !state.shuffleDraw.edited) state.shuffleDraw = null;
+        }
         syncRotationQueue();
         saveState();
       }
@@ -1856,15 +1862,11 @@
     // WHO plays is decided by the fair-turn queue: people who sat out go first, people who just
     // played go to the back, so everybody gets the same number of turns and nobody waits long.
     // The TEAMS are random: in 2v2 the split avoids repeating last match's partners when it can.
-    function makeDraw() {
-      const need = drawSize();
-      if (readyNames().length < need) return null;
-      const s = ensureSession();
-      const chosen = s.order.filter(isReady).slice(0, need);
-      if (chosen.length < need) return null;
-      if (need === 2) return { sideA: [chosen[0]], sideB: [chosen[1]] };
-
-      const prev = new Set(s.lastPartners || []);
+    // Splits the chosen players into two sides. In 2v2 the split is random but avoids
+    // repeating last match's partners when it can.
+    function drawFrom(chosen) {
+      if (chosen.length === 2) return { sideA: [chosen[0]], sideB: [chosen[1]] };
+      const prev = new Set(ensureSession().lastPartners || []);
       const splits = [[[0, 1], [2, 3]], [[0, 2], [1, 3]], [[0, 3], [1, 2]]].map(sp => ({
         sp,
         repeats: sp.reduce((n, pr) => n + (prev.has(pairKey(chosen[pr[0]], chosen[pr[1]])) ? 1 : 0), 0)
@@ -1873,6 +1875,23 @@
       const opts = splits.filter(x => x.repeats === best);
       const pick = opts[Math.floor(Math.random() * opts.length)].sp;
       return { sideA: pick[0].map(i => chosen[i]), sideB: pick[1].map(i => chosen[i]) };
+    }
+
+    // Everybody who is Ready, in the order they should play: fewest turns tonight first, and
+    // among players with the same number of turns, whoever has waited longest (the fair-turn queue).
+    // Because the turn count comes first, anyone who was skipped by hand catches up by themselves.
+    function turnLine() {
+      const s = ensureSession();
+      const ord = s.order;
+      return readyNames().sort((a, b) =>
+        (s.counts[a] || 0) - (s.counts[b] || 0) || ord.indexOf(a) - ord.indexOf(b));
+    }
+
+    function makeDraw() {
+      const need = drawSize();
+      const chosen = turnLine().slice(0, need);
+      if (chosen.length < need) return null;
+      return drawFrom(chosen);
     }
 
     function drawIsValid(d) {
@@ -1888,13 +1907,45 @@
       if (force || !drawIsValid(state.shuffleDraw)) state.shuffleDraw = makeDraw();
     }
 
+    // Re-draw: the SAME players (including any you swapped in), split into new teams.
     function redrawShuffle() {
       if (!requireAccess('teams', 'change the draw')) return;
-      const before = JSON.stringify(state.shuffleDraw);
-      for (let i = 0; i < 6; i++) {
-        refreshDraw(true);
-        if (JSON.stringify(state.shuffleDraw) !== before) break;
+      const d = state.shuffleDraw;
+      if (!d) { refreshDraw(true); saveState(); return; }
+      if (drawSize() !== 4) return;
+      const pl = [d.sideA[0], d.sideA[1], d.sideB[0], d.sideB[1]];
+      const prev = new Set(ensureSession().lastPartners || []);
+      const options = [[[0, 2], [1, 3]], [[0, 3], [1, 2]]].map(sp => ({
+        sp,
+        repeats: sp.reduce((n, pr) => n + (prev.has(pairKey(pl[pr[0]], pl[pr[1]])) ? 1 : 0), 0)
+      }));
+      const best = Math.min(...options.map(x => x.repeats));
+      const opts = options.filter(x => x.repeats === best);
+      const pick = opts[Math.floor(Math.random() * opts.length)].sp;
+      state.shuffleDraw = { sideA: pick[0].map(i => pl[i]), sideB: pick[1].map(i => pl[i]), edited: !!d.edited };
+      drawSel = null;
+      saveState();
+    }
+
+    // Change players: everybody in the draw is replaced by the next players in line
+    // (as many new ones as there are waiting), with fresh random teams.
+    // Players who are skipped stay first in line, so nobody loses their turn.
+    function changeDrawPlayers() {
+      if (!requireAccess('teams', 'change the draw')) return;
+      const need = drawSize();
+      const ready = turnLine();
+      const d = state.shuffleDraw;
+      if (!d) { refreshDraw(true); saveState(); return; }
+      if (ready.length <= need) {
+        alert(`Only ${ready.length} players are Ready, so there is nobody else to bring in.`);
+        return;
       }
+      const current = new Set([...d.sideA, ...d.sideB]);
+      const idx = ready.map((n, i) => current.has(n) ? i : -1).filter(i => i >= 0);
+      const start = idx.length ? Math.max(...idx) + 1 : 0;
+      const circle = ready.slice(start).concat(ready.slice(0, start));
+      const chosen = circle.filter(n => !current.has(n)).concat(circle.filter(n => current.has(n))).slice(0, need);
+      state.shuffleDraw = drawFrom(chosen);
       drawSel = null;
       saveState();
     }
@@ -1920,6 +1971,7 @@
       else if (la) { d[la.side][la.i] = name; }
       else if (lb) { d[lb.side][lb.i] = a; }
       else { renderUpcomingAndAvailability(); return; }
+      d.edited = true;
       saveState();
     }
 
@@ -1933,8 +1985,7 @@
       const can = canDo('teams');
       const chip = n => `<button ${can ? '' : 'disabled'} data-name="${esc(n)}" onclick="drawTap(this.dataset.name)" class="px-2.5 py-1.5 rounded-lg text-xs font-bold border ${drawSel === n ? 'bg-amber-500/30 border-amber-400 text-amber-200' : 'bg-slate-800 border-slate-700 text-slate-100'}">${esc(n)}</button>`;
       const inDraw = new Set([...d.sideA, ...d.sideB]);
-      const ord = ensureSession().order;
-      const waiting = readyNames().filter(n => !inDraw.has(n)).sort((a, b) => ord.indexOf(a) - ord.indexOf(b));
+      const waiting = turnLine().filter(n => !inDraw.has(n));
       container.innerHTML = `
         <p class="text-[11px] text-slate-400">🔀 Random draw for the next match.${can ? ' Tap two names to swap them.' : ''}</p>
         <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
@@ -1945,7 +1996,11 @@
           </div>
         </div>
         ${waiting.length ? `<p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 pt-1">Waiting - next in line first (${waiting.length})</p><div class="flex flex-wrap gap-1.5">${waiting.map(chip).join('')}</div>` : ''}
-        ${can ? '<button onclick="redrawShuffle()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2 rounded-xl border border-slate-600 transition">🔀 Re-draw</button>' : ''}`;
+        ${can ? `<div class="flex flex-wrap gap-2 pt-1">
+          ${need === 4 ? '<button onclick="redrawShuffle()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2 rounded-xl border border-slate-600 transition">🔀 Re-draw teams</button>' : ''}
+          <button onclick="changeDrawPlayers()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2 rounded-xl border border-slate-600 transition">👥 Change players</button>
+        </div>
+        <p class="text-[10px] text-slate-500">${need === 4 ? 'Re-draw teams: same players, new partners. ' : ''}Change players: brings in the next players in line.</p>` : ''}`;
     }
 
     function renderTeamSchedule(container) {
