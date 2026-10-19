@@ -1570,7 +1570,9 @@
       const ready = readyNames();
       const counts = {};
       ready.forEach(n => { counts[n] = 0; });
-      return { id: Date.now(), startedAt: Date.now(), counts, last: {}, seq: 0, meetings: {}, lastPartners: [], attendees: [...ready] };
+      const q = (state.rotationQueue || []).filter(n => ready.includes(n));
+      const order = q.concat(ready.filter(n => !q.includes(n)));
+      return { id: Date.now(), startedAt: Date.now(), counts, last: {}, seq: 0, meetings: {}, lastPartners: [], attendees: [...ready], order };
     }
 
     function fixSession(s) {
@@ -1580,12 +1582,31 @@
       s.lastPartners = s.lastPartners || [];
       s.attendees = s.attendees || [];
       s.seq = s.seq || 0;
+      s.order = s.order || [];
       return s;
+    }
+
+    // The fair-turn queue: the next players to play are at the front. Everyone who is Ready
+    // must be in it. Latecomers go to the FRONT (they play as soon as possible); before the
+    // first match of the night people simply line up in the order they arrive.
+    function syncOrder(s) {
+      s.order = (s.order || []).filter(n => state.players && state.players[n] && !isRefereeName(n));
+      const missing = readyNames().filter(n => !s.order.includes(n));
+      if (!missing.length) return;
+      s.order = s.seq === 0 ? s.order.concat(missing) : missing.concat(s.order);
+    }
+
+    function moveToBack(s, names) {
+      const inOrder = s.order.filter(n => names.includes(n));
+      const extra = names.filter(n => !s.order.includes(n));
+      s.order = s.order.filter(n => !names.includes(n)).concat(inOrder, extra);
     }
 
     function ensureSession() {
       if (!state.session) state.session = newSessionObject();
-      return fixSession(state.session);
+      const s = fixSession(state.session);
+      syncOrder(s);
+      return s;
     }
 
     // a throw-away copy (used to preview matches ahead without changing anything)
@@ -1597,6 +1618,7 @@
 
     function applyMatchToSession(s, game) {
       s.seq = (s.seq || 0) + 1;
+      moveToBack(s, [...game.sideA, ...game.sideB]);
       [...game.sideA, ...game.sideB].forEach(n => {
         s.counts[n] = (s.counts[n] || 0) + 1;
         s.last[n] = s.seq;
@@ -1831,16 +1853,15 @@
     // ============================================================
     function drawSize() { return state.selectedGameMode === '1v1' ? 2 : 4; }
 
-    // Players who have played the fewest matches tonight go first (ties are random).
-    // In 2v2 the split avoids repeating last match's partners when it can.
+    // WHO plays is decided by the fair-turn queue: people who sat out go first, people who just
+    // played go to the back, so everybody gets the same number of turns and nobody waits long.
+    // The TEAMS are random: in 2v2 the split avoids repeating last match's partners when it can.
     function makeDraw() {
       const need = drawSize();
-      const ready = readyNames();
-      if (ready.length < need) return null;
+      if (readyNames().length < need) return null;
       const s = ensureSession();
-      const order = ready.slice().sort(() => Math.random() - 0.5)
-        .sort((a, b) => (s.counts[a] || 0) - (s.counts[b] || 0) || lastOf(s, a) - lastOf(s, b));
-      const chosen = order.slice(0, need);
+      const chosen = s.order.filter(isReady).slice(0, need);
+      if (chosen.length < need) return null;
       if (need === 2) return { sideA: [chosen[0]], sideB: [chosen[1]] };
 
       const prev = new Set(s.lastPartners || []);
@@ -1912,7 +1933,8 @@
       const can = canDo('teams');
       const chip = n => `<button ${can ? '' : 'disabled'} data-name="${esc(n)}" onclick="drawTap(this.dataset.name)" class="px-2.5 py-1.5 rounded-lg text-xs font-bold border ${drawSel === n ? 'bg-amber-500/30 border-amber-400 text-amber-200' : 'bg-slate-800 border-slate-700 text-slate-100'}">${esc(n)}</button>`;
       const inDraw = new Set([...d.sideA, ...d.sideB]);
-      const waiting = readyNames().filter(n => !inDraw.has(n));
+      const ord = ensureSession().order;
+      const waiting = readyNames().filter(n => !inDraw.has(n)).sort((a, b) => ord.indexOf(a) - ord.indexOf(b));
       container.innerHTML = `
         <p class="text-[11px] text-slate-400">🔀 Random draw for the next match.${can ? ' Tap two names to swap them.' : ''}</p>
         <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
@@ -1922,7 +1944,7 @@
             <div class="flex flex-col gap-1.5 items-stretch">${d.sideB.map(chip).join('')}</div>
           </div>
         </div>
-        ${waiting.length ? `<p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 pt-1">Waiting (${waiting.length})</p><div class="flex flex-wrap gap-1.5">${waiting.map(chip).join('')}</div>` : ''}
+        ${waiting.length ? `<p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 pt-1">Waiting - next in line first (${waiting.length})</p><div class="flex flex-wrap gap-1.5">${waiting.map(chip).join('')}</div>` : ''}
         ${can ? '<button onclick="redrawShuffle()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2 rounded-xl border border-slate-600 transition">🔀 Re-draw</button>' : ''}`;
     }
 
@@ -2005,6 +2027,7 @@
       const s = ensureSession();
       s.counts[inName] = (s.counts[inName] || 0) + 1;
       s.last[inName] = s.seq;
+      moveToBack(s, [inName]);
       if (!s.attendees.includes(inName)) s.attendees.push(inName);
       if (g.mode === '2v2') s.lastPartners = [pairKey(g.sideA[0], g.sideA[1]), pairKey(g.sideB[0], g.sideB[1])];
       g.replaced = (g.replaced || []).concat([{ out: outName, in: inName }]);
