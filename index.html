@@ -34,6 +34,7 @@
 <body class="bg-pool-cloth text-slate-100 min-h-screen flex flex-col font-sans pb-24">
 
   <!-- APP CONTAINER -->
+  <div id="connBanner" class="hidden fixed top-0 left-0 right-0 z-[100] bg-red-700 text-white text-xs font-bold text-center px-3 py-2"></div>
   <div id="app" class="max-w-4xl w-full mx-auto p-4 flex-grow flex flex-col gap-6">
     
     <!-- HEADER / LOGO -->
@@ -54,6 +55,7 @@
         <div>
           <h1 class="text-2xl font-black tracking-wider text-sky-400 uppercase">Billiards Boys</h1>
           <p class="text-xs text-slate-400 font-medium">8-Ball & 9-Ball League Dashboard</p>
+          <p id="buildTag" onclick="alert(dbgLog.join('\n'))" class="text-[10px] text-slate-500 cursor-pointer">build …</p>
         </div>
       </div>
 
@@ -71,7 +73,7 @@
       <div class="space-y-4">
         <div>
           <label class="block text-xs font-semibold mb-1 text-slate-300">Player Name</label>
-          <input type="text" id="loginName" placeholder="Enter your name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-sky-500"/>
+          <input type="text" id="loginName" maxlength="20" placeholder="Enter your name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-sky-500"/>
         </div>
         <div>
           <label class="block text-xs font-semibold mb-1 text-slate-300">4-Digit Passcode</label>
@@ -97,7 +99,7 @@
         <section class="bg-pool-card border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
           <div class="flex justify-between items-center border-b border-slate-700 pb-3">
             <h2 class="text-lg font-bold text-sky-400">Table Status</h2>
-            <span id="tableStatusBadge" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Available</span>
+            <span id="tableStatusBadge" class="flex flex-wrap justify-end gap-1.5 text-xs font-bold"></span>
           </div>
 
           <div class="flex justify-center gap-4 py-2">
@@ -110,6 +112,14 @@
             <button onclick="setGameType('9ball')" id="btnType9ball" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-pool-felt text-white shadow">9-Ball</button>
             <button onclick="setGameType('8ball')" id="btnType8ball" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">8-Ball</button>
           </div>
+
+          <div class="flex justify-center items-center gap-2 pb-1">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tables</span>
+            <button onclick="setTableCount(1)" id="tblCnt1" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-pool-felt text-white shadow">1</button>
+            <button onclick="setTableCount(2)" id="tblCnt2" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">2</button>
+          </div>
+          <div id="tableAssignPanel" class="hidden bg-slate-900/60 border border-slate-700 rounded-xl p-3"></div>
+          <div id="tableTabs" class="hidden flex gap-2 justify-center"></div>
 
           <div class="flex flex-col sm:flex-row gap-3 pt-2">
             <button onclick="startNextMatch()" id="startMatchBtn" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition text-sm shadow-md">
@@ -166,54 +176,7 @@
 
       <!-- PAGE 2: SCOREBOARD -->
       <div id="pageScoreboard" class="page-content hidden space-y-4">
-        <section class="bg-pool-card border-2 border-sky-500/50 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
-          <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
-            <div class="flex items-center gap-2">
-              <span class="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></span>
-              <h2 class="text-lg font-bold text-slate-100">Active Game</h2>
-              <span id="activeGameMode" class="text-xs bg-sky-500/20 text-sky-300 px-2.5 py-0.5 rounded-full border border-sky-500/30 uppercase font-semibold">1v1</span>
-              <span id="activeGameType" class="hidden text-xs bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30 uppercase font-semibold"></span>
-            </div>
-            <div id="gameTimer" class="font-mono text-xl font-bold text-amber-400 bg-slate-900 px-3 py-1 rounded-lg border border-slate-700">00:00</div>
-          </div>
-
-          <div id="noActiveGame" class="text-center py-12 text-slate-400 text-sm">
-            No active match in progress.
-          </div>
-
-          <div id="activeGameDisplay" class="hidden space-y-6">
-            <div class="grid grid-cols-2 gap-4 text-center">
-              <div class="bg-slate-900/80 border border-sky-500/30 p-4 rounded-xl shadow-inner">
-                <p id="sideALabel" class="text-xs font-bold text-sky-400 mb-1 uppercase">Side A</p>
-                <p id="sideAPlayers" class="text-lg font-extrabold text-white"></p>
-              </div>
-              <div class="bg-slate-900/80 border border-amber-500/30 p-4 rounded-xl shadow-inner">
-                <p id="sideBLabel" class="text-xs font-bold text-amber-400 mb-1 uppercase">Side B</p>
-                <p id="sideBPlayers" class="text-lg font-extrabold text-white"></p>
-              </div>
-            </div>
-
-            <div id="victoryButtons" class="flex flex-col sm:flex-row gap-3">
-              <button onclick="endMatch('Side A')" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-xl transition shadow-md">
-                Side A Victory 🏆
-              </button>
-              <button onclick="endMatch('Side B')" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl transition shadow-md">
-                Side B Victory 🏆
-              </button>
-            </div>
-            <p id="victoryNote" class="hidden text-center text-xs text-slate-400 italic">🛡️ Only the Referee can record the result.</p>
-
-            <div id="replacePanel" class="bg-slate-900/60 border border-slate-700 rounded-xl p-3 space-y-2">
-              <p class="text-xs font-bold text-slate-300">Replace a player (someone left or is swapping in)</p>
-              <div class="flex flex-wrap items-center gap-2">
-                <select id="replaceOut" class="bg-slate-800 border border-slate-700 text-xs rounded-lg p-2 text-white flex-1 min-w-[110px]"></select>
-                <span class="text-slate-500">→</span>
-                <select id="replaceIn" class="bg-slate-800 border border-slate-700 text-xs rounded-lg p-2 text-white flex-1 min-w-[110px]"></select>
-                <button onclick="replaceActivePlayer()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition">Replace</button>
-              </div>
-            </div>
-          </div>
-        </section>
+        <div id="tablesContainer" class="space-y-4"></div>
       </div>
 
       <!-- PAGE 3: STANDINGS -->
@@ -285,6 +248,7 @@
           <p class="text-[10px] text-slate-400">Removes the player and their stats from the app. Their past matches stay in History (use the 🗑 Delete button on the History page to remove individual records).</p>
           <div class="flex gap-2">
             <select id="deletePlayerSelect" class="bg-slate-800 border border-slate-700 text-xs rounded-lg p-2 text-white flex-1"></select>
+            <button onclick="resetPlayerPasscode()" class="bg-sky-600/80 hover:bg-sky-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition">Reset Passcode</button>
             <button onclick="confirmDeletePlayer()" class="bg-red-600/80 hover:bg-red-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition">Delete Player</button>
           </div>
         </section>
@@ -305,8 +269,8 @@
                 <option value="random">Random partners</option>
               </select>
               <div class="flex items-center gap-1">
-                <button onclick="setGameType('9ball')" id="tBtnType9ball" class="px-3 py-2 rounded-xl text-xs font-bold bg-pool-felt text-white shadow">9-Ball</button>
-                <button onclick="setGameType('8ball')" id="tBtnType8ball" class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">8-Ball</button>
+                <button onclick="setGameType('9ball', 1)" id="tBtnType9ball" class="px-3 py-2 rounded-xl text-xs font-bold bg-pool-felt text-white shadow">9-Ball</button>
+                <button onclick="setGameType('8ball', 1)" id="tBtnType8ball" class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">8-Ball</button>
               </div>
               <button onclick="generateTournamentBracket()" id="genBracketBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow">Generate Bracket</button>
               <button onclick="resetTournament()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs px-3 py-2 rounded-xl transition border border-slate-700">Clear</button>
@@ -361,16 +325,50 @@
   <script>
     // --- FIREBASE CONFIGURATION ---
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
+      apiKey: "AIzaSyAoXVdOUefixNjLzxtnsCCiFkgG3lQUU9g",
       authDomain: "billiardboys-1a58c.firebaseapp.com",
       projectId: "billiardboys-1a58c",
-      storageBucket: "billiardboys-1a58c.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      storageBucket: "billiardboys-1a58c.firebasestorage.app",
+      messagingSenderId: "311987196667",
+      appId: "1:311987196667:web:eeb7491670da92a7e5565e"
     };
+
+    const BUILD = '2026-10-23-r9';
+    const dbgLog = [];
+    function dbg(m) {
+      dbgLog.push(new Date().toLocaleTimeString() + ' ' + m);
+      if (dbgLog.length > 30) dbgLog.shift();
+      const el = document.getElementById('buildTag');
+      if (el) el.innerText = 'build ' + BUILD + ' · ' + m.slice(0, 48) + ' (tap for log)';
+    }
+    // every save gets a higher revision number than anything seen so far, so an older
+    // copy of the data coming back from the server can never overwrite a newer local change
+    let lastRev = 0;
+    // any field in the database that this app does not know about is carried along untouched
+    let extraFields = {};
+    function nextRev() { lastRev = Math.max(Date.now(), lastRev + 1); return lastRev; }
+
+    function showConnProblem(msg) {
+      const b = document.getElementById('connBanner');
+      if (b) { b.innerText = '⚠️ ' + msg; b.classList.remove('hidden'); }
+    }
+    function configLooksFake() {
+      return Object.values(firebaseConfig).some(v => /^YOUR_/.test(String(v)));
+    }
+    window.addEventListener('DOMContentLoaded', () => {
+      if (configLooksFake()) showConnProblem('Firebase is not set up: replace YOUR_API_KEY / YOUR_SENDER_ID / YOUR_APP_ID in the file with the real values from Firebase Console > Project settings. Until then nothing can be saved and buttons will flip back.');
+    });
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    // Works on networks / file:// pages where Firestore's default streaming connection is blocked
+    try { db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch (e) { console.warn('settings:', e); }
+
+    // Warn if the real Firebase server never answers (offline, blocked network, wrong keys)
+    let gotServerData = false;
+    setTimeout(() => {
+      if (!gotServerData && !configLooksFake()) showConnProblem('Cannot reach the Firebase server. Changes will NOT sync and may flip back. Check the internet connection (or try mobile data / another Wi-Fi).');
+    }, 8000);
 
     // --- GAME TYPES ---
     const GAME_TYPES = { '9ball': '9-Ball', '8ball': '8-Ball' };
@@ -396,6 +394,8 @@
       resetScores: true,   // reset one player / reset the whole leaderboard
       deleteRecords: true, // delete match/tournament history records and player accounts
       teams:       false,  // edit the 2v2 teams and the random draw
+      assignTables: false, // move / swap players between Table 1 and Table 2
+      autoSplit:   true,   // re-split EVERYONE evenly between the tables
       sessions:    true    // New Session, restore / delete saved nights
     };
     const MATCH_WIN_POINTS = 3;
@@ -411,7 +411,11 @@
     let state = {
       players: {}, 
       rotationQueue: [],
-      activeGame: null, 
+      activeGame: null,             // Table 1
+      activeGame2: null,            // Table 2
+      tableCount: 1,
+      tableAssign: {},              // name -> 1 | 2 (only used with 2 tables)
+      t2: { mode: '1v1', gameType: '9ball', shuffle: false, draw: null, teams: [] },  // Table 2's own settings
       selectedGameMode: '1v1',
       shuffleMode: false,
       matchHistory: [],
@@ -445,7 +449,16 @@
     // --- INITIALIZATION & FIREBASE SYNC ---
     window.addEventListener('DOMContentLoaded', () => {
       db.collection('billiards').doc('global_state').onSnapshot(doc => {
+        if (!doc.metadata.fromCache) {
+          gotServerData = true;
+          const b = document.getElementById('connBanner');
+          if (b && !configLooksFake() && /reach the Firebase server/.test(b.innerText)) b.classList.add('hidden');
+        }
         if (!doc.exists) {
+          // Only create the starting document when the SERVER confirms it is missing.
+          // A "missing" answer from an empty offline cache must never overwrite real data.
+          if (doc.metadata.fromCache) { dbg('no data yet (offline cache) - waiting'); return; }
+          tryAutoLogin(false);
           saveState();
           return;
         }
@@ -453,9 +466,20 @@
         if (doc.metadata.hasPendingWrites) return;
 
         const data = doc.data();
+        const rev = data.rev || 0;
+        dbg(`server data rev ${rev % 100000} mode ${data.selectedGameMode} ${doc.metadata.fromCache ? '(cache)' : '(server)'}`);
+        if (rev < lastRev) { dbg('ignored OLDER data from server'); return; }
+        lastRev = Math.max(lastRev, rev);
+        { const known = new Set(Object.keys(state).concat(['rev'])); extraFields = {}; Object.keys(data).forEach(k => { if (!known.has(k)) extraFields[k] = data[k]; }); }
         state.players = data.players || {};
         state.rotationQueue = data.rotationQueue || [];
         state.activeGame = data.activeGame || null;
+        state.activeGame2 = data.activeGame2 || null;
+        state.tableCount = data.tableCount === 2 ? 2 : 1;
+        state.tableAssign = data.tableAssign || {};
+        { const d2 = data.t2 || {};
+          state.t2 = { mode: d2.mode === '2v2' ? '2v2' : '1v1', gameType: validGameType(d2.gameType), shuffle: !!d2.shuffle, draw: d2.draw || null, teams: d2.teams || [] }; }
+        if (state.tableCount !== 2) viewTable = 1;
         state.selectedGameMode = data.selectedGameMode || '1v1';
         state.shuffleMode = data.shuffleMode || false;
         state.matchHistory = data.matchHistory || [];
@@ -472,10 +496,11 @@
         state.tournamentTeamSource = data.tournamentTeamSource === 'random' ? 'random' : 'mine';
         state.tournamentMode = data.tournamentMode === '2v2' ? '2v2' : '1v1';
         state.tournamentTeams = data.tournamentTeams || [];
+        tryAutoLogin(doc.metadata.fromCache);
 
         syncRotationQueue();
         render();
-      }, err => console.error('Snapshot error:', err));
+      }, err => { console.error('Snapshot error:', err); dbg('READ ERROR ' + (err && err.code)); showConnProblem('Cannot read from Firebase (' + (err && err.code ? err.code : 'error') + '). Check the keys and Firestore rules.'); });
 
       // Saved nights live in their own document so the main one never gets too big
       db.collection('billiards').doc('session_backups').onSnapshot(doc => {
@@ -484,26 +509,23 @@
         renderHistory();
       }, err => console.error('Backups snapshot error:', err));
 
-      const rememberedUser = localStorage.getItem('billiards_user');
-      if (rememberedUser) {
-        setTimeout(() => {
-          const ref = findReferee(rememberedUser);
-          if (ref) {
-            isReferee = true;
-            currentUser = ref.name;
-            setupUserSession(ref.name);
-            render();
-          } else if (state.players && state.players[rememberedUser]) {
-            isReferee = false;
-            currentUser = rememberedUser;
-            setupUserSession(rememberedUser);
-            render();
-          } else {
-            localStorage.removeItem('billiards_user');
-          }
-        }, 300);
-      }
+      pendingRemember = localStorage.getItem('billiards_user');
+      if (pendingRemember && findReferee(pendingRemember)) tryAutoLogin(false);
     });
+
+    // Auto-login waits for the first real server snapshot; it never deletes the saved login
+    // just because data is slow.
+    let pendingRemember = null;
+    function tryAutoLogin(fromCache) {
+      const n = pendingRemember;
+      if (!n || currentUser) return;
+      const ref = findReferee(n);
+      if (ref) { isReferee = true; currentUser = ref.name; pendingRemember = null; setupUserSession(ref.name); return; }
+      if (state.players && state.players[n]) { isReferee = false; currentUser = n; pendingRemember = null; setupUserSession(n); return; }
+      if (fromCache) return;
+      localStorage.removeItem('billiards_user');
+      pendingRemember = null;
+    }
 
     // Firestore does NOT allow arrays inside arrays (rounds -> matches),
     // so the bracket is stored as a JSON string.
@@ -514,24 +536,39 @@
     }
 
     function saveState() {
-      try { ensureSession(); normalizeTeams(); refreshDraw(false); } catch (e) { console.error('Session error:', e); }
+      setCtx(1); scopeTable = null;
+      try { ensureSession(); ensureAssignments(); for (let tt = 1; tt <= (state.tableCount === 2 ? 2 : 1); tt++) inTable(tt, () => { normalizeTeams(); refreshDraw(false); }); } catch (e) { console.error('Session error:', e); dbg('session error: ' + e.message); }
+      state.rev = nextRev();
 
       // show the change immediately for the person who made it
       try { render(); } catch (e) { console.error('Render error:', e); }
 
       try {
-        const payload = JSON.parse(JSON.stringify(state)); // strips undefined values
+        const payload = Object.assign({}, JSON.parse(JSON.stringify(extraFields)), JSON.parse(JSON.stringify(state))); // strips undefined values
         delete payload.sessionBackups;                      // stored in its own document
         payload.tournamentRounds = JSON.stringify(state.tournamentRounds || []);
+        const kb = Math.round(JSON.stringify(payload).length / 1024);
+        dbg(`saving ${kb} KB, mode ${payload.selectedGameMode}`);
+        if (kb > 900) showConnProblem(`Data is ${kb} KB, close to Firestore's 1 MB limit per document. Saves will start failing; history must be moved out.`);
         db.collection('billiards').doc('global_state').set(payload)
+          .then(() => dbg('server confirmed save'))
           .catch(err => {
             console.error('Save error:', err);
-            alert('Could not save to the server. Check your connection / Firebase config.');
+            dbg('SAVE FAILED ' + (err && err.code));
+            showConnProblem('Save failed (' + (err && err.code ? err.code : 'error') + '). Check the Firebase keys and Firestore rules; your last change was undone.');
+            alert('Could not save to the server (' + (err && err.code ? err.code : 'error') + '). Check your Firebase config and Firestore rules.');
           });
       } catch (err) {
         console.error('Save error (sync):', err);
+        alert('Could not save your change: ' + (err && err.message ? err.message : err));
       }
     }
+
+    ['startNextMatch', 'redrawShuffle', 'changeDrawPlayers', 'drawTap', 'teamTap', 'addTeam', 'removeTeam', 'clearTeams', 'clearSlot', 'autoMakeTeams'].forEach(n => {
+      const f = window[n];
+      if (typeof f !== 'function') return;
+      window[n] = function (...a) { return inTable(viewTable, () => f.apply(this, a)); };
+    });
 
     // Every list of players in the app (queue, grid, dropdowns, standings, brackets)
     // goes through this, so a referee can never show up as a player.
@@ -559,6 +596,7 @@
 
     // --- PAGE NAVIGATION ---
     function switchPage(pageId) {
+      try { localStorage.setItem('billiards_page', pageId); } catch (e) {}
       ['queue', 'scoreboard', 'standings', 'tournament', 'history'].forEach(p => {
         const el = document.getElementById(`page${p.charAt(0).toUpperCase() + p.slice(1)}`);
         const navEl = document.getElementById(`nav${p.charAt(0).toUpperCase() + p.slice(1)}`);
@@ -605,9 +643,12 @@
         return;
       }
 
-      let name = nameInput.charAt(0).toUpperCase() + nameInput.slice(1).toLowerCase();
+      const clean = nameInput.replace(/\s+/g, ' ').trim().slice(0, 20).trim();
+      let name = clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
 
       if (!state.players) state.players = {};
+      const existing = Object.keys(state.players).find(k => k.toLowerCase() === name.toLowerCase());
+      if (existing) name = existing;
 
       if (state.players[name]) {
         if (state.players[name].passcode !== code) {
@@ -615,9 +656,11 @@
           return;
         }
       } else {
+        if (!confirm(`No player named "${name}" exists. Create a new player?`)) return;
         state.players[name] = {
           passcode: code,
           available: false,
+          statsResetAt: Date.now(),
           stats1v1: { played: 0, won: 0, lost: 0, points: 0 },
           stats2v2: { played: 0, won: 0, lost: 0, points: 0 },
           statsTournament: { played: 0, won: 0, second: 0, third: 0, points: 0 }
@@ -643,6 +686,8 @@
       document.getElementById('bottomNav').classList.remove('hidden');
       document.getElementById('userInfo').classList.remove('hidden');
       document.getElementById('currentUserName').innerText = isReferee ? `🛡️ ${name}` : name;
+      const pg = localStorage.getItem('billiards_page');
+      switchPage(['queue', 'scoreboard', 'standings', 'tournament', 'history'].includes(pg) ? pg : 'queue');
     }
 
     function logout() {
@@ -661,27 +706,28 @@
     // --- RENDER ROUTINE ---
     function render() {
       renderActiveGame();
-      renderUpcomingAndAvailability();
-      renderRoleAndGameType();
+      inTable(viewTable, () => { renderUpcomingAndAvailability(); renderRoleAndGameType(); });
       renderLeaderboard();
       renderTournamentBracket();
       renderHistory();
       renderResetDropdown();
-      renderTeamsPanel();
+      inTable(viewTable, renderTeamsPanel);
       renderSessionBar();
     }
 
     function setGameMode(mode) {
-      if (!requireAccess('gameSetup', 'change the game mode')) return;
-      state.selectedGameMode = mode;
+      const t = viewTable;
+      if (!canSetTable(t, 'change this table\'s game mode')) return;
+      inTable(t, () => { state.selectedGameMode = mode === '2v2' ? '2v2' : '1v1'; });
       saveState();
     }
 
     // 9-Ball / 8-Ball selector (lobby + tournament page share it)
-    function setGameType(type) {
-      if (!requireAccess('gameSetup', 'change the game type')) return;
+    function setGameType(type, tournamentTable) {
       if (!GAME_TYPES[type]) return;
-      state.selectedGameType = type;
+      const t = tournamentTable || viewTable;
+      if (tournamentTable ? !requireAccess('gameSetup', 'change the game type') : !canSetTable(t, 'change this table\'s game type')) return;
+      inTable(t, () => { state.selectedGameType = type; });
       saveState();
     }
 
@@ -697,7 +743,7 @@
        ['tBtnType9ball', '9ball', 'px-3 py-2'], ['tBtnType8ball', '8ball', 'px-3 py-2']].forEach(([id, key, pad]) => {
         const el = document.getElementById(id);
         if (!el) return;
-        el.className = pillClass(t === key, pad, setupOk);
+        el.className = pillClass((id[0] === 't' ? validGameType(cfgOf(1).gameType) : t) === key, pad, setupOk);
         el.disabled = !setupOk;
       });
 
@@ -707,6 +753,7 @@
       };
       show('victoryButtons', canDo('endMatch'));
       show('victoryNote', !canDo('endMatch'));
+      show('cancelMatchBtn', canDo('endMatch'));
       show('resetPanel', canDo('resetScores'));
       show('deletePlayerPanel', canDo('deleteRecords'));
       show('tournamentControls', canDo('tournament'));
@@ -747,68 +794,237 @@
       }
     }
 
-    function renderActiveGame() {
-      const noGameEl = document.getElementById('noActiveGame');
-      const gameDispEl = document.getElementById('activeGameDisplay');
-      const tableBadge = document.getElementById('tableStatusBadge');
+    // --- PER-TABLE CONTEXT ---
+    // Table 1's settings live in the normal state fields, Table 2's in state.t2. inTable(t, fn)
+    // temporarily swaps them so ALL the existing queue / team / draw logic runs unchanged
+    // for that table, with the player pool limited to the players assigned to it.
+    let ctxTable = 1, scopeTable = null, viewTable = 1;
+    function swapT2() {
+      const t = state.t2;
+      [state.selectedGameMode, t.mode] = [t.mode, state.selectedGameMode];
+      [state.selectedGameType, t.gameType] = [t.gameType, state.selectedGameType];
+      [state.shuffleMode, t.shuffle] = [t.shuffle, state.shuffleMode];
+      [state.shuffleDraw, t.draw] = [t.draw, state.shuffleDraw];
+      [state.teams, t.teams] = [t.teams, state.teams];
+    }
+    function setCtx(t) { if (t !== ctxTable) { swapT2(); ctxTable = t; } }
+    function inTable(t, fn) {
+      if (state.tableCount !== 2) t = 1;
+      const pc = ctxTable, ps = scopeTable;
+      setCtx(t);
+      scopeTable = state.tableCount === 2 ? t : null;
+      try { return fn(); } finally { setCtx(pc); scopeTable = ps; }
+    }
+    function cfgOf(t) { return { gameType: t === ctxTable ? state.selectedGameType : state.t2.gameType }; }
+    function assignedTable(n) { return state.tableCount === 2 && state.tableAssign && state.tableAssign[n] === 2 ? 2 : 1; }
+    function inScope(n) { return scopeTable === null || assignedTable(n) === scopeTable; }
+    function teamNum(id) { return id > 100 ? id - 100 : id; }
 
-      if (!state.activeGame) {
-        if (noGameEl) noGameEl.classList.remove('hidden');
-        if (gameDispEl) gameDispEl.classList.add('hidden');
-        if (tableBadge) {
-          tableBadge.className = 'text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-          tableBadge.innerText = 'Available';
+    function ensureAssignments() {
+      if (state.tableCount !== 2) return;
+      if (!state.tableAssign) state.tableAssign = {};
+      Object.keys(state.tableAssign).forEach(n => { if (!state.players[n]) delete state.tableAssign[n]; });
+      const ready = getPlayerNames().filter(isReady), cnt = { 1: 0, 2: 0 };
+      ready.forEach(n => { if (state.tableAssign[n]) cnt[state.tableAssign[n]]++; });
+      ready.forEach(n => { if (!state.tableAssign[n]) { const t = cnt[1] <= cnt[2] ? 1 : 2; state.tableAssign[n] = t; cnt[t]++; } });
+    }
+    function dropFromTeams(n) {
+      [state.teams, state.t2.teams].forEach(list => (list || []).forEach(t => { if (t.p1 === n) t.p1 = null; if (t.p2 === n) t.p2 = null; }));
+    }
+    function moveToTable(name, t) {
+      if (!requireAccess('assignTables', 'move players between tables')) return;
+      if (state.tableCount !== 2) return;
+      if (tableOf(name)) { alert(`${name} is in a running match. Move them after it ends.`); return; }
+      state.tableAssign[name] = t === 2 ? 2 : 1;
+      dropFromTeams(name);
+      moveSel = null;
+      saveState();
+    }
+
+    // tap a player, then either move them or tap someone on the other table to swap
+    let moveSel = null;
+    function tapPlayerTable(name) {
+      if (state.tableCount !== 2) return;
+      if (tableOf(name)) { alert(`${name} is in a running match. Change tables after it ends (or use Replace on the table card).`); return; }
+      if (!moveSel || moveSel === name) { moveSel = moveSel === name ? null : name; render(); return; }
+      if (assignedTable(moveSel) === assignedTable(name)) { moveSel = name; render(); return; }
+      const a = moveSel, b = name;
+      const ta = assignedTable(a), tb = assignedTable(b);
+      state.tableAssign[a] = tb; state.tableAssign[b] = ta;
+      dropFromTeams(a); dropFromTeams(b);
+      moveSel = null;
+      saveState();
+    }
+    function autoSplit() {
+      if (!requireAccess('autoSplit', 'split the players')) return;
+      if (state.tableCount !== 2) return;
+      if (!confirm('Re-split all Ready players evenly between the two tables? Players who move leave their team.')) return;
+      const busy = busyNames(), cnt = { 1: 0, 2: 0 };
+      const ready = getPlayerNames().filter(isReady);
+      ready.filter(n => busy.has(n)).forEach(n => cnt[assignedTable(n)]++);
+      const free = ready.filter(n => !busy.has(n)).sort(() => Math.random() - 0.5);
+      free.forEach(n => {
+        const t = cnt[1] <= cnt[2] ? 1 : 2; cnt[t]++;
+        if (assignedTable(n) !== t) dropFromTeams(n);
+        state.tableAssign[n] = t;
+      });
+      saveState();
+    }
+    function setViewTable(n) { viewTable = n === 2 ? 2 : 1; render(); }
+    function canSetTable(t, action) {
+      if (!requireAccess('gameSetup', action)) return false;
+      if (state.tableCount === 2 && !isReferee && assignedTable(currentUser) !== t) {
+        alert(`Only players on Table ${t} (or the Referee) can ${action}.`);
+        return false;
+      }
+      return true;
+    }
+
+    // --- TABLES (1 or 2). Table 1 = state.activeGame, Table 2 = state.activeGame2 ---
+    function tablesShown() { return (state.tableCount === 2 || state.activeGame2) ? 2 : 1; }
+    function gameAt(t) { return t === 2 ? state.activeGame2 : state.activeGame; }
+    function setGameAt(t, g) { if (t === 2) state.activeGame2 = g; else state.activeGame = g; }
+    function activeGames() {
+      const out = [];
+      for (let t = 1; t <= tablesShown(); t++) if (gameAt(t)) out.push({ t, g: gameAt(t) });
+      return out;
+    }
+    function busyNames() {
+      const set = new Set();
+      activeGames().forEach(x => [...x.g.sideA, ...x.g.sideB].forEach(n => set.add(n)));
+      return set;
+    }
+    function tableOf(name) { const x = activeGames().find(y => [...y.g.sideA, ...y.g.sideB].includes(name)); return x ? x.t : 0; }
+    function freeTable() { for (let t = 1; t <= tablesShown(); t++) if (!gameAt(t)) return t; return null; }
+
+    function setTableCount(n) {
+      if (!requireAccess('gameSetup', 'change the number of tables')) return;
+      n = n === 2 ? 2 : 1;
+      if (n === 1 && state.activeGame2) { alert('Finish or cancel the match on Table 2 first.'); return; }
+      if (n === 2 && state.tableCount !== 2) {
+        state.t2 = { mode: state.selectedGameMode, gameType: state.selectedGameType, shuffle: state.shuffleMode, draw: null, teams: [] };
+        state.tableAssign = {};
+      }
+      if (n === 1 && state.tableCount === 2) {
+        (state.t2.teams || []).forEach(t => state.teams.push({ id: nextTeamId(), p1: t.p1, p2: t.p2 }));
+        state.t2 = { mode: '1v1', gameType: '9ball', shuffle: false, draw: null, teams: [] };
+        state.tableAssign = {};
+        viewTable = 1;
+      }
+      state.tableCount = n;
+      saveState();
+    }
+
+    function renderTableStatus() {
+      const badge = document.getElementById('tableStatusBadge');
+      if (badge) {
+        let h = '';
+        for (let t = 1; t <= tablesShown(); t++) {
+          const g = gameAt(t);
+          h += g
+            ? `<span class="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">T${t}: ${esc([...g.sideA, ...g.sideB].join(', '))}</span>`
+            : `<span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">T${t}: Free</span>`;
         }
-        clearInterval(timerInterval);
-        const timerEl = document.getElementById('gameTimer');
-        if (timerEl) timerEl.innerText = '00:00';
-        return;
+        badge.innerHTML = h;
       }
-
-      if (noGameEl) noGameEl.classList.add('hidden');
-      if (gameDispEl) gameDispEl.classList.remove('hidden');
-      if (tableBadge) {
-        tableBadge.className = 'text-xs font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30';
-        tableBadge.innerText = 'In Match';
+      [1, 2].forEach(n => {
+        const el = document.getElementById('tblCnt' + n);
+        if (el) { el.className = pillClass(tablesShown() === n, 'px-4 py-1.5', canDo('gameSetup')); el.disabled = !canDo('gameSetup'); }
+      });
+      const two = state.tableCount === 2;
+      const sb = document.getElementById('startMatchBtn');
+      if (sb) {
+        if (two) sb.innerText = gameAt(viewTable) ? `Table ${viewTable} is busy` : `Start Next Match → Table ${viewTable}`;
+        else { const f = freeTable(); sb.innerText = f ? `Start Next Match → Table ${f}` : 'All tables busy'; }
       }
-
-      const is1v1 = state.activeGame.mode === '1v1';
-      const modeEl = document.getElementById('activeGameMode');
-      if (modeEl) modeEl.innerText = state.activeGame.mode;
-      const typeEl = document.getElementById('activeGameType');
-      if (typeEl) {
-        const label = gameTypeLabel(state.activeGame.gameType);
-        typeEl.innerText = label;
-        typeEl.classList.toggle('hidden', !label);
+      const tabs = document.getElementById('tableTabs'), panel = document.getElementById('tableAssignPanel');
+      const names = getPlayerNames().filter(isReady);
+      const mine = currentUser && !isReferee ? assignedTable(currentUser) : 0;
+      if (tabs) {
+        tabs.classList.toggle('hidden', !two);
+        if (two) tabs.innerHTML = [1, 2].map(n => `<button onclick="setViewTable(${n})" class="${pillClass(viewTable === n, 'px-4 py-2', true)}">Table ${n} · ${names.filter(x => assignedTable(x) === n).length} players${mine === n ? ' ⭐ yours' : ''}</button>`).join('');
       }
-
-      if (is1v1) {
-        document.getElementById('sideALabel').innerText = 'Player 1';
-        document.getElementById('sideAPlayers').innerText = state.activeGame.sideA[0] || '-';
-        document.getElementById('sideBLabel').innerText = 'Player 2';
-        document.getElementById('sideBPlayers').innerText = state.activeGame.sideB[0] || '-';
-      } else {
-        const tl = state.activeGame.teamLabels || ['Team A', 'Team B'];
-        document.getElementById('sideALabel').innerText = tl[0];
-        document.getElementById('sideAPlayers').innerText = state.activeGame.sideA.join(' & ');
-        document.getElementById('sideBLabel').innerText = tl[1];
-        document.getElementById('sideBPlayers').innerText = state.activeGame.sideB.join(' & ');
+      if (panel) {
+        panel.classList.toggle('hidden', !two);
+        if (two) {
+          const col = n => names.filter(x => assignedTable(x) === n).map(x => {
+            const sel = moveSel === x;
+            return `<button onclick="tapPlayerTable(decodeURIComponent('${encodeURIComponent(x)}'))" class="text-xs font-bold px-2.5 py-1 rounded-lg border ${sel ? 'bg-sky-600 border-sky-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-200 hover:border-sky-500'}">${esc(x)}${tableOf(x) ? ' 🎱' : ''}</button>`;
+          }).join(' ') || '<span class="text-xs text-slate-500">nobody</span>';
+          panel.innerHTML = `<div class="flex justify-between items-center mb-2"><p class="text-xs font-bold text-slate-300">Who is on which table</p>${isReferee ? '<button onclick="autoSplit()" class="text-[11px] font-bold bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded-lg">Auto-split</button>' : ''}</div>
+            <div class="grid grid-cols-2 gap-3"><div><p class="text-[10px] uppercase text-sky-400 font-bold mb-1">Table 1</p><div class="flex flex-wrap gap-1.5">${col(1)}</div></div>
+            <div><p class="text-[10px] uppercase text-amber-400 font-bold mb-1">Table 2</p><div class="flex flex-wrap gap-1.5">${col(2)}</div></div></div>
+            ${moveSel && state.players[moveSel] ? `<div class="mt-3 flex flex-wrap items-center gap-2 text-xs"><span class="text-slate-300"><b>${esc(moveSel)}</b> selected:</span>
+              <button onclick="moveToTable(moveSel, ${assignedTable(moveSel) === 1 ? 2 : 1})" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-3 py-1 rounded-lg">Move to Table ${assignedTable(moveSel) === 1 ? 2 : 1}</button>
+              <span class="text-slate-400">or tap a player on Table ${assignedTable(moveSel) === 1 ? 2 : 1} to swap</span>
+              <button onclick="moveSel = null; render()" class="text-slate-400 underline">Cancel</button></div>`
+              : '<p class="text-[10px] text-slate-500 mt-2">Tap a player, then move them to the other table, or tap a player there to swap.</p>'}`;
+        }
       }
+    }
 
+    function renderActiveGame() {
+      renderTableStatus();
+      const box = document.getElementById('tablesContainer');
+      if (!box) return;
+      const keep = {};
+      box.querySelectorAll('select').forEach(el => { keep[el.id] = el.value; });
+      const busy = busyNames();
+      const opts = (names, sel) => names.map(n => `<option value="${esc(n)}"${n === sel ? ' selected' : ''}>${esc(n)}</option>`).join('');
+      let html = '';
+      for (let t = 1; t <= tablesShown(); t++) {
+        const g = gameAt(t);
+        const lbl = g ? gameTypeLabel(g.gameType) : '';
+        const head = `<div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
+          <div class="flex items-center gap-2 flex-wrap">
+            ${g ? '<span class="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></span>' : ''}
+            <h2 class="text-lg font-bold text-slate-100">Table ${t}</h2>
+            ${g ? `<span class="text-xs bg-sky-500/20 text-sky-300 px-2.5 py-0.5 rounded-full border border-sky-500/30 uppercase font-semibold">${esc(g.mode)}</span>` : ''}
+            ${lbl ? `<span class="text-xs bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30 uppercase font-semibold">${esc(lbl)}</span>` : ''}
+          </div>
+          <div data-timer="${t}" class="font-mono text-xl font-bold text-amber-400 bg-slate-900 px-3 py-1 rounded-lg border border-slate-700">00:00</div></div>`;
+        if (!g) {
+          html += `<section class="bg-pool-card border-2 border-slate-700 rounded-2xl p-5 shadow-2xl">${head}<div class="text-center py-8 text-slate-400 text-sm">Table ${t} is free. Start the next match from the Lobby.</div></section>`;
+          continue;
+        }
+        const is1 = g.mode === '1v1';
+        const tl = g.teamLabels || ['Team A', 'Team B'];
+        const side = (cls, label, names) => `<div class="bg-slate-900/80 border ${cls} p-4 rounded-xl shadow-inner"><p class="text-xs font-bold mb-1 uppercase ${cls.includes('sky') ? 'text-sky-400' : 'text-amber-400'}">${esc(label)}</p><p class="text-lg font-extrabold text-white">${esc(names.join(' & ') || '-')}</p></div>`;
+        const playing = [...g.sideA, ...g.sideB];
+        const free = inTable(t, () => readyNames()).filter(n => !busy.has(n));
+        html += `<section class="bg-pool-card border-2 border-sky-500/50 rounded-2xl p-5 shadow-2xl space-y-5">${head}
+          <div class="grid grid-cols-2 gap-4 text-center">
+            ${side('border-sky-500/30', is1 ? 'Player 1' : tl[0], g.sideA)}
+            ${side('border-amber-500/30', is1 ? 'Player 2' : tl[1], g.sideB)}
+          </div>
+          ${canDo('endMatch') ? `<div class="flex flex-col sm:flex-row gap-3">
+            <button onclick="endMatch('Side A', ${t})" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-xl transition shadow-md">Side A Victory 🏆</button>
+            <button onclick="endMatch('Side B', ${t})" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl transition shadow-md">Side B Victory 🏆</button>
+          </div>
+          <button onclick="cancelMatch(${t})" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold py-2 rounded-xl border border-slate-600 transition">✖ Cancel / abort this match (no result)</button>`
+            : '<p class="text-center text-xs text-slate-400 italic">🛡️ Only the Referee can record the result.</p>'}
+          ${canDo('startMatch') ? `<div class="bg-slate-900/60 border border-slate-700 rounded-xl p-3 space-y-2">
+            <p class="text-xs font-bold text-slate-300">Replace a player (someone left or is swapping in)</p>
+            <div class="flex flex-wrap items-center gap-2">
+              <select id="replaceOut${t}" class="bg-slate-800 border border-slate-700 text-xs rounded-lg p-2 text-white flex-1 min-w-[110px]">${opts(playing, keep['replaceOut' + t])}</select>
+              <span class="text-slate-500">→</span>
+              <select id="replaceIn${t}" class="bg-slate-800 border border-slate-700 text-xs rounded-lg p-2 text-white flex-1 min-w-[110px]">${opts(free, keep['replaceIn' + t])}</select>
+              <button onclick="replaceActivePlayer(${t})" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition">Replace</button>
+            </div></div>` : ''}
+        </section>`;
+      }
+      box.innerHTML = html;
       clearInterval(timerInterval);
-      updateTimer();
-      timerInterval = setInterval(updateTimer, 1000);
-      fillReplaceSelects();
+      if (activeGames().length) { updateTimer(); timerInterval = setInterval(updateTimer, 1000); }
     }
 
     function updateTimer() {
-      if (!state.activeGame || !state.activeGame.startTime) return;
-      const elapsedMs = Date.now() - state.activeGame.startTime;
-      const totalSec = Math.floor(elapsedMs / 1000);
-      const mins = String(Math.floor(totalSec / 60)).padStart(2, '0');
-      const secs = String(totalSec % 60).padStart(2, '0');
-      const timerEl = document.getElementById('gameTimer');
-      if (timerEl) timerEl.innerText = `${mins}:${secs}`;
+      document.querySelectorAll('[data-timer]').forEach(el => {
+        const g = gameAt(Number(el.dataset.timer));
+        if (!g || !g.startTime) { el.innerText = '00:00'; return; }
+        const totalSec = Math.floor(Math.max(0, Date.now() - g.startTime) / 1000);
+        el.innerText = `${String(Math.floor(totalSec / 60)).padStart(2, '0')}:${String(totalSec % 60).padStart(2, '0')}`;
+      });
     }
 
     function renderUpcomingAndAvailability() {
@@ -843,6 +1059,7 @@
 
           btn.innerHTML = `
             <span>${esc(name)}</span>
+            ${tableOf(name) ? `<span class="text-[10px] text-amber-400">🎱 Table ${tableOf(name)}</span>` : (state.tableCount === 2 && isReady(name) ? `<span class="text-[10px] text-slate-500">T${assignedTable(name)}</span>` : '')}
             <span class="text-[10px] mt-1 ${p.available ? 'text-emerald-400' : 'text-slate-600'}">
               ${p.available ? '● Ready' : '○ Away'}
             </span>
@@ -873,15 +1090,25 @@
     }
 
     function toggleShuffleMode() {
-      if (!requireAccess('queue', 'change the queue order mode')) return;
-      state.shuffleMode = !state.shuffleMode;
+      const t = viewTable;
+      if (!canSetTable(t, 'change this table\'s queue mode')) return;
+      inTable(t, () => { state.shuffleMode = !state.shuffleMode; });
       saveState();
+    }
+
+    // first in line plays whoever (of the others) they have met the least tonight
+    function pick1v1(q, s) {
+      const a = q[0];
+      const rest = q.slice(1).map((n, i) => ({ n, i, m: s.meetings[meetKey(a, n)] || 0 }));
+      rest.sort((x, y) => x.m - y.m || x.i - y.i);
+      return [a, rest[0].n];
     }
 
     function startNextMatch() {
       if (!requireAccess('startMatch', 'start a match')) return;
-      if (state.activeGame) {
-        alert('A match is already in progress!');
+      const tNo = state.tableCount === 2 ? scopeTable : freeTable();
+      if (!tNo || gameAt(tNo)) {
+        alert(state.tableCount === 2 ? `Table ${tNo} already has a match in progress. Finish or cancel it first.` : 'Every table has a match in progress. Finish or cancel one first.');
         return;
       }
 
@@ -901,7 +1128,7 @@
         state.shuffleDraw = null; // a fresh draw is made for the following match
       } else if (mode === '2v2') {
         // Standard 2v2: the teams you made, taking turns
-        const pair = pickPairing(completeTeams(), ensureSession());
+        const pair = pickPairing(freeTeams(), ensureSession());
         if (!pair) {
           alert(teamStartProblem());
           return;
@@ -916,29 +1143,32 @@
       } else {
         // Standard 1v1: normal queue rotation
         syncRotationQueue();
-        if (!state.rotationQueue || state.rotationQueue.length < reqCount) {
-          alert(`Need at least ${reqCount} ready players to start a ${mode} game.`);
+        const freeQ = (state.rotationQueue || []).filter(n => !busyNames().has(n) && inScope(n));
+        if (freeQ.length < reqCount) {
+          alert(`Need at least ${reqCount} ready players who are not already on a table to start a ${mode} game.`);
           return;
         }
-        const selected = state.rotationQueue.slice(0, reqCount);
-        state.rotationQueue = state.rotationQueue.slice(reqCount).concat(selected);
-        game = { mode: '1v1', gameType, sideA: [selected[0]], sideB: [selected[1]] };
+        const pr = pick1v1(freeQ, ensureSession());
+        state.rotationQueue = state.rotationQueue.filter(n => !pr.includes(n)).concat(pr);
+        game = { mode: '1v1', gameType, sideA: [pr[0]], sideB: [pr[1]] };
       }
 
       game.startTime = Date.now();
-      state.activeGame = game;
+      game.table = tNo;
+      setGameAt(tNo, game);
       markMatchStarted(game);
 
       saveState();
       switchPage('scoreboard');
     }
 
-    function endMatch(winningSide) {
+    function endMatch(winningSide, tNo) {
+      tNo = tNo === 2 ? 2 : 1;
       if (!requireAccess('endMatch', 'end a match')) return;
-      if (!state.activeGame) return;
-
-      const game = state.activeGame;
+      const game = gameAt(tNo);
+      if (!game) return;
       const isAWin = winningSide === 'Side A';
+      if (!confirm(`Record ${(isAWin ? game.sideA : game.sideB).join(' & ')} as the winner?`)) return;
       const winners = isAWin ? game.sideA : game.sideB;
       const losers = isAWin ? game.sideB : game.sideA;
       const statKey = game.mode === '1v1' ? 'stats1v1' : 'stats2v2';
@@ -969,9 +1199,27 @@
         ...(game.replaced && game.replaced.length ? { subs: game.replaced } : {})
       });
 
-      state.activeGame = null;
+      setGameAt(tNo, null);
       saveState();
-      switchPage('standings');
+      switchPage(activeGames().length ? 'scoreboard' : 'standings');
+    }
+
+    function cancelMatch(tNo) {
+      tNo = tNo === 2 ? 2 : 1;
+      if (!requireAccess('endMatch', 'cancel a match')) return;
+      const g = gameAt(tNo);
+      if (!g) return;
+      if (!confirm('Cancel this match? No result is recorded and the players get their turn back.')) return;
+      const s = ensureSession();
+      const names = [...g.sideA, ...g.sideB];
+      names.forEach(n => { s.counts[n] = Math.max(0, (s.counts[n] || 0) - 1); });
+      s.order = names.concat((s.order || []).filter(n => !names.includes(n)));
+      state.rotationQueue = names.concat((state.rotationQueue || []).filter(n => !names.includes(n)));
+      const mk = g.mode === '1v1' ? meetKey(g.sideA[0], g.sideB[0]) : (g.teamIds && g.teamIds.length === 2 ? meetKey(g.teamIds[0], g.teamIds[1]) : null);
+      if (mk && s.meetings[mk]) s.meetings[mk] = Math.max(0, s.meetings[mk] - 1);
+      setGameAt(tNo, null);
+      state.shuffleDraw = null;
+      saveState();
     }
 
     // --- TOURNAMENT BRACKET GENERATION ---
@@ -992,10 +1240,13 @@
             alert('Random 2v2 needs at least 6 Ready players (3 teams).');
             return;
           }
+          if (ready.length % 2 && !confirm('An odd number of players are Ready, so one random player will sit out. Continue?')) return;
           const sh = ready.slice().sort(() => Math.random() - 0.5);
           groups = [];
           for (let i = 0; i + 1 < sh.length; i += 2) groups.push([sh[i], sh[i + 1]]);
         } else {
+          const skipped = (state.teams || []).filter(t => t.p1 && t.p2 && !(isReady(t.p1) && isReady(t.p2)));
+          if (skipped.length && !confirm('These teams have an Away member and will NOT play: ' + skipped.map(t => 'Team ' + teamNum(t.id)).join(', ') + '. Continue?')) return;
           groups = completeTeams().map(t => [t.p1, t.p2]);
           if (groups.length < 3) {
             alert('You need at least 3 complete teams (every member Ready). Use "Auto-make teams" in the Lobby, or choose "Random partners".');
@@ -1007,10 +1258,7 @@
       } else {
         names = getPlayerNames().filter(n => state.players[n] && state.players[n].available);
         if (names.length < 3) {
-          names = getPlayerNames();
-        }
-        if (names.length < 3) {
-          alert('You need at least 3 registered players to generate a tournament bracket.');
+          alert('You need at least 3 Ready players to generate a tournament bracket. Away players are never added automatically.');
           return;
         }
       }
@@ -1568,7 +1816,7 @@
     function pairKey(a, b) { return [a, b].sort().join('|'); }
     function meetKey(a, b) { return a < b ? `${a}-${b}` : `${b}-${a}`; }
     function isReady(name) { return !!(state.players && state.players[name] && state.players[name].available); }
-    function readyNames() { return getPlayerNames().filter(isReady); }
+    function readyNames() { return getPlayerNames().filter(isReady).filter(inScope); }
     function fmtDate(ts) { return new Date(ts).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }); }
     function fmtTime(ts) { return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
 
@@ -1589,6 +1837,7 @@
       s.attendees = s.attendees || [];
       s.seq = s.seq || 0;
       s.order = s.order || [];
+      s.gaps = s.gaps || [];
       return s;
     }
 
@@ -1623,6 +1872,7 @@
     function lastOf(s, n) { return s.last[n] === undefined ? -1 : s.last[n]; }
 
     function applyMatchToSession(s, game) {
+      if (game.mode === '1v1' && game.sideA[0] && game.sideB[0]) { const k1 = meetKey(game.sideA[0], game.sideB[0]); s.meetings[k1] = (s.meetings[k1] || 0) + 1; }
       s.seq = (s.seq || 0) + 1;
       moveToBack(s, [...game.sideA, ...game.sideB]);
       [...game.sideA, ...game.sideB].forEach(n => {
@@ -1655,9 +1905,13 @@
     // 2v2 TEAMS (Standard mode)
     // ============================================================
     function findTeam(id) { return (state.teams || []).find(t => t.id === id); }
-    function teamLabelOf(t) { return `Team ${(state.teams || []).findIndex(x => x.id === t.id) + 1}`; }
+    function teamLabelOf(t) { return `Team ${teamNum(t.id)}`; }
     function inAnyTeam(n) { return (state.teams || []).some(t => t.p1 === n || t.p2 === n); }
     function unassignedReady() { return readyNames().filter(n => !inAnyTeam(n)); }
+    function freeTeams() {
+      const busy = busyNames();
+      return completeTeams().filter(t => !busy.has(t.p1) && !busy.has(t.p2));
+    }
     function completeTeams() {
       return (state.teams || []).filter(t => t.p1 && t.p2 && isReady(t.p1) && isReady(t.p2));
     }
@@ -1669,18 +1923,18 @@
       state.teams.forEach(t => ['p1', 'p2'].forEach(sl => {
         const n = t[sl];
         if (!n) { t[sl] = null; return; }
-        if (seen.has(n) || !state.players[n]) t[sl] = null; else seen.add(n);
+        if (seen.has(n) || !state.players[n] || !inScope(n)) t[sl] = null; else seen.add(n);
       }));
     }
 
     function nextTeamId() {
-      return (state.teams || []).reduce((mx, t) => Math.max(mx, t.id || 0), 0) + 1;
+      return (state.teams || []).reduce((mx, t) => Math.max(mx, t.id || 0), ctxTable === 2 ? 100 : 0) + 1;
     }
 
     function teamStatusMessages() {
       const msgs = [];
       (state.teams || []).forEach((t, i) => {
-        const label = `Team ${i + 1}`;
+        const label = `Team ${teamNum(t.id)}`;
         if (!t.p1 && !t.p2) msgs.push(`${label} needs 2 players`);
         else if (!t.p1 || !t.p2) msgs.push(`${label} needs 1 player`);
         else {
@@ -1712,7 +1966,7 @@
     }
 
     function teamStartProblem() {
-      let m = completeTeams().length < 2
+      let m = freeTeams().length < 2
         ? 'You need at least 2 complete teams (every member Ready) to start a 2v2 match.'
         : 'Could not pick the next teams.';
       const msgs = teamStatusMessages();
@@ -1790,7 +2044,7 @@
       if (!requireAccess('teams', 'edit the teams')) return;
       normalizeTeams();
       syncRotationQueue();
-      const pool = (state.rotationQueue || []).filter(n => !inAnyTeam(n));
+      const pool = (state.rotationQueue || []).filter(n => !inAnyTeam(n) && inScope(n) && isReady(n));
       state.teams.forEach(t => ['p1', 'p2'].forEach(sl => {
         if (!t[sl] && pool.length) t[sl] = pool.shift();
       }));
@@ -1830,7 +2084,7 @@
         list.innerHTML = teams.length ? teams.map((t, i) => `
           <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
             <div class="flex justify-between items-center">
-              <span class="text-xs font-bold text-sky-400">Team ${i + 1}</span>
+              <span class="text-xs font-bold text-sky-400">Team ${teamNum(t.id)}</span>
               ${can ? `<button onclick="removeTeam(${t.id})" class="text-[11px] text-slate-500 hover:text-red-300">Remove team</button>` : ''}
             </div>
             <div class="flex gap-2">${slotHtml(t, 'p1')}${slotHtml(t, 'p2')}</div>
@@ -1883,15 +2137,23 @@
     function turnLine() {
       const s = ensureSession();
       const ord = s.order;
-      return readyNames().sort((a, b) =>
+      return readyNames().filter(n => !busyNames().has(n)).sort((a, b) =>
         (s.counts[a] || 0) - (s.counts[b] || 0) || ord.indexOf(a) - ord.indexOf(b));
     }
 
     function makeDraw() {
       const need = drawSize();
-      const chosen = turnLine().slice(0, need);
-      if (chosen.length < need) return null;
-      return drawFrom(chosen);
+      const line = turnLine();
+      if (line.length < need) return null;
+      if (need === 2) {
+        const s = ensureSession(), a = line[0], rest = line.slice(1);
+        const tier = rest.filter(n => (s.counts[n] || 0) === (s.counts[rest[0]] || 0));
+        const least = Math.min(...tier.map(n => s.meetings[meetKey(a, n)] || 0));
+        const opts = tier.filter(n => (s.meetings[meetKey(a, n)] || 0) === least);
+        const b = opts[Math.floor(Math.random() * opts.length)];
+        return Math.random() < 0.5 ? { sideA: [a], sideB: [b] } : { sideA: [b], sideB: [a] };
+      }
+      return drawFrom(line.slice(0, need));
     }
 
     function drawIsValid(d) {
@@ -1899,7 +2161,7 @@
       const per = drawSize() / 2;
       if (d.sideA.length !== per || d.sideB.length !== per) return false;
       const all = [...d.sideA, ...d.sideB];
-      return new Set(all).size === all.length && all.every(isReady);
+      return new Set(all).size === all.length && all.every(n => isReady(n) && inScope(n) && !busyNames().has(n));
     }
 
     function refreshDraw(force) {
@@ -2004,14 +2266,14 @@
     }
 
     function renderTeamSchedule(container) {
-      const teams = completeTeams();
+      const teams = freeTeams();
       if (teams.length < 2) {
-        container.innerHTML = '<p class="text-xs text-slate-400 italic">Need at least 2 complete teams (every member Ready). Make your teams below.</p>';
+        container.innerHTML = '<p class="text-xs text-slate-400 italic">Need at least 2 free complete teams (every member Ready and not on a table). Make your teams below.</p>';
         return;
       }
       const sim = sessionCopy();
       let html = '';
-      for (let n = 1; n <= 3; n++) {
+      for (let n = 1; n <= 5; n++) {
         const pr = pickPairing(teams, sim);
         if (!pr) break;
         const [a, b] = pr;
@@ -2038,48 +2300,39 @@
         container.innerHTML = '<p class="text-xs text-slate-400 italic">At least 2 online/available players are required to schedule matches.</p>';
         return;
       }
-      let matchNumber = 1;
-      for (let i = 0; i + 1 < queue.length && matchNumber <= 3; i += 2) {
+      let q = queue.filter(n => !busyNames().has(n) && inScope(n));
+      if (q.length < 2) { container.innerHTML = '<p class="text-xs text-slate-400 italic">Not enough free players for another match right now.</p>'; return; }
+      const sim = sessionCopy();
+      for (let matchNumber = 1; matchNumber <= 5; matchNumber++) {
+        const pr = pick1v1(q, sim);
         const card = document.createElement('div');
         card.className = 'bg-slate-900 border border-slate-800 p-3 rounded-xl flex justify-between items-center text-xs';
         card.innerHTML = `
           <span class="font-bold text-slate-400">Match #${matchNumber} ${matchNumber === 1 ? '⚡ Next' : ''}</span>
-          <div><span class="font-bold text-sky-400">${esc(queue[i])}</span> <span class="text-slate-500 font-bold px-2">VS</span> <span class="font-bold text-amber-400">${esc(queue[i + 1])}</span></div>`;
+          <div><span class="font-bold text-sky-400">${esc(pr[0])}</span> <span class="text-slate-500 font-bold px-2">VS</span> <span class="font-bold text-amber-400">${esc(pr[1])}</span></div>`;
         container.appendChild(card);
-        matchNumber++;
+        q = q.filter(n => !pr.includes(n)).concat(pr);
+        applyMatchToSession(sim, { mode: '1v1', sideA: [pr[0]], sideB: [pr[1]] });
       }
     }
 
     // ============================================================
     // REPLACE A PLAYER DURING A MATCH
     // ============================================================
-    function fillReplaceSelects() {
-      const out = document.getElementById('replaceOut');
-      const inn = document.getElementById('replaceIn');
-      if (!out || !inn || !state.activeGame) return;
-      const g = state.activeGame;
-      const playing = [...g.sideA, ...g.sideB];
-      const fill = (sel, names) => {
-        const keep = sel.value;
-        sel.innerHTML = names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
-        if (keep && names.includes(keep)) sel.value = keep;
-      };
-      fill(out, playing);
-      fill(inn, readyNames().filter(n => !playing.includes(n)));
-    }
-
-    function replaceActivePlayer() {
+    function replaceActivePlayer(tNo) {
+      tNo = tNo === 2 ? 2 : 1;
       if (!requireAccess('startMatch', 'replace a player')) return;
-      const g = state.activeGame;
+      const g = gameAt(tNo);
       if (!g) return;
-      const outName = document.getElementById('replaceOut').value;
-      const inName = document.getElementById('replaceIn').value;
+      const outName = (document.getElementById('replaceOut' + tNo) || {}).value;
+      const inName = (document.getElementById('replaceIn' + tNo) || {}).value;
       if (!outName || !inName) { alert('Choose who leaves and who comes in (the new player must be Ready).'); return; }
       ['sideA', 'sideB'].forEach(side => {
         const i = g[side].indexOf(outName);
         if (i !== -1) g[side][i] = inName;
       });
       const s = ensureSession();
+      s.counts[outName] = Math.max(0, (s.counts[outName] || 0) - 1);
       s.counts[inName] = (s.counts[inName] || 0) + 1;
       s.last[inName] = s.seq;
       moveToBack(s, [inName]);
@@ -2107,24 +2360,28 @@
       return { id: t.id, number: t.number, mode: t.mode || '1v1', gameType: t.gameType || null, first: t.first, second: t.second, third: t.third || null };
     }
 
+    // is this record inside the session (ignoring any time spent in a restored-over gap)?
+    function inSession(s, id, upto) {
+      return id >= s.startedAt && id <= (upto || Infinity) && !(s.gaps || []).some(g => id > g.from && id < g.to);
+    }
+    function buildBackup(s) {
+      const now = Date.now();
+      return JSON.parse(JSON.stringify({
+        id: now, startedAt: s.startedAt, endedAt: now, attendees: s.attendees, counts: s.counts,
+        teams: (state.teams || []).map(t => ({ label: `Team ${teamNum(t.id)}`, members: [t.p1, t.p2].filter(Boolean) })),
+        matches: (state.matchHistory || []).filter(m => inSession(s, m.id, now)).map(compactMatch),
+        tournaments: (state.tournamentHistory || []).filter(t => inSession(s, t.id, now)).map(compactTournament),
+        snapshot: { session: s, teams: state.teams || [] }
+      }));
+    }
+
     function newSession() {
       if (!requireAccess('sessions', 'start a new session')) return;
-      if (state.activeGame) { alert('End the current match first.'); return; }
+      if (activeGames().length) { alert('End or cancel every running match first.'); return; }
       const s = ensureSession();
       if (!confirm("Start a new session? Tonight's teams and match counts are saved as a backup, then cleared. Standings and History are not changed.")) return;
 
-      const now = Date.now();
-      const backup = JSON.parse(JSON.stringify({
-        id: now,
-        startedAt: s.startedAt,
-        endedAt: now,
-        attendees: s.attendees,
-        counts: s.counts,
-        teams: (state.teams || []).map((t, i) => ({ label: `Team ${i + 1}`, members: [t.p1, t.p2].filter(Boolean) })),
-        matches: (state.matchHistory || []).filter(m => m.id >= s.startedAt && m.id <= now).map(compactMatch),
-        tournaments: (state.tournamentHistory || []).filter(t => t.id >= s.startedAt && t.id <= now).map(compactTournament),
-        snapshot: { session: s, teams: state.teams || [] }
-      }));
+      const backup = buildBackup(s);
 
       const prev = state.sessionBackups || [];
       state.sessionBackups = [backup].concat(prev);
@@ -2150,15 +2407,23 @@
 
     function restoreSessionBackup(id) {
       if (!requireAccess('sessions', 'restore a session')) return;
-      if (state.activeGame) { alert('End the current match first.'); return; }
+      if (activeGames().length) { alert('End or cancel every running match first.'); return; }
       const prev = state.sessionBackups || [];
       const b = prev.find(x => x.id === id);
       if (!b || !b.snapshot) return;
-      if (!confirm('Restore this night? The current session (teams and match counts) is replaced by the saved one.')) return;
+      if (!confirm('Restore this night? Tonight\'s current session is saved as a backup first, then replaced by the saved one.')) return;
 
-      state.sessionBackups = prev.filter(x => x.id !== id);
+      const cur = state.session ? fixSession(state.session) : null;
+      const curBackup = cur && ((cur.attendees || []).length || (state.teams || []).length || (state.matchHistory || []).some(m => inSession(cur, m.id))) ? buildBackup(cur) : null;
+      state.sessionBackups = (curBackup ? [curBackup] : []).concat(prev.filter(x => x.id !== id));
+      if (JSON.stringify(state.sessionBackups).length > BACKUPS_MAX_BYTES) {
+        state.sessionBackups = prev;
+        alert('Backup storage is full. Delete some old backups first.');
+        return;
+      }
       saveBackups().then(() => {
         state.session = fixSession(JSON.parse(JSON.stringify(b.snapshot.session)));
+        state.session.gaps = state.session.gaps.concat([{ from: b.endedAt, to: Date.now() }]);
         state.teams = JSON.parse(JSON.stringify(b.snapshot.teams || []));
         state.shuffleDraw = null;
         teamSel = null;
@@ -2193,13 +2458,13 @@
       if (!el) return;
       const s = state.session;
       if (!s) { el.innerText = "🗓 Tonight's session starts with the first change"; return; }
-      const n = (state.matchHistory || []).filter(m => m.id >= s.startedAt).length;
+      const n = (state.matchHistory || []).filter(m => inSession(s, m.id)).length;
       el.innerText = `🗓 Session since ${fmtTime(s.startedAt)} · ${n} match${n === 1 ? '' : 'es'} · ${(s.attendees || []).length} players`;
     }
 
     function renderSessionsTab(container) {
       const s = state.session;
-      const tonight = s ? (state.matchHistory || []).filter(m => m.id >= s.startedAt).length : 0;
+      const tonight = s ? (state.matchHistory || []).filter(m => inSession(s, m.id)).length : 0;
       let html = `<div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
         <p class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Tonight (current session)</p>
         <p class="text-xs text-slate-300">${s ? `Started ${esc(fmtDate(s.startedAt))}, ${esc(fmtTime(s.startedAt))} · ${tonight} match${tonight === 1 ? '' : 'es'} · ${(s.attendees || []).length} players` : 'Not started yet'}</p>
@@ -2399,14 +2664,26 @@
       saveState();
     }
 
+    function resetPlayerPasscode() {
+      if (!requireAccess('deleteRecords', 'reset a passcode')) return;
+      const sel = document.getElementById('deletePlayerSelect');
+      const name = sel && sel.value;
+      if (!name || !state.players[name]) return;
+      const code = prompt(`New 4-character passcode for ${name}:`);
+      if (code === null) return;
+      if (code.trim().length !== 4) { alert('The passcode must be exactly 4 characters.'); return; }
+      state.players[name].passcode = code.trim();
+      saveState();
+      alert(`Passcode for ${name} was reset. Their stats are untouched.`);
+    }
+
     function confirmDeletePlayer() {
       if (!requireAccess('deleteRecords', 'delete players')) return;
       const sel = document.getElementById('deletePlayerSelect');
       const name = sel && sel.value;
       if (!name || isRefereeName(name) || !state.players[name]) return;
 
-      const g = state.activeGame;
-      if (g && [...(g.sideA || []), ...(g.sideB || [])].includes(name)) {
+      if (busyNames().has(name)) {
         alert(`${name} is in the match that is being played. End the match first.`);
         return;
       }
