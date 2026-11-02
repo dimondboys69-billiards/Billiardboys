@@ -35,7 +35,7 @@
 
   <!-- APP CONTAINER -->
   <div id="connBanner" class="hidden fixed top-0 left-0 right-0 z-[100] bg-red-700 text-white text-xs font-bold text-center px-3 py-2"></div>
-  <div id="app" class="max-w-4xl w-full mx-auto p-4 flex-grow flex flex-col gap-6">
+  <div id="app" class="max-w-4xl w-full mx-auto p-4 pb-32 flex-grow flex flex-col gap-6">
     
     <!-- HEADER / LOGO -->
     <header class="bg-pool-card border-2 border-pool-felt/40 rounded-2xl p-4 shadow-xl flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -96,59 +96,54 @@
 
       <!-- PAGE 1: LOBBY & SCHEDULE -->
       <div id="pageQueue" class="page-content space-y-4">
-        <section class="bg-pool-card border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
-          <div class="flex justify-between items-center border-b border-slate-700 pb-3">
-            <h2 class="text-lg font-bold text-sky-400">Table Status</h2>
+        <section class="bg-pool-card border border-slate-700 rounded-2xl p-4 shadow-xl space-y-3">
+          <div class="flex justify-between items-center">
+            <h2 class="text-lg font-bold text-sky-400">Next match</h2>
             <span id="tableStatusBadge" class="flex flex-wrap justify-end gap-1.5 text-xs font-bold"></span>
           </div>
-
-          <div class="flex justify-center gap-4 py-2">
-            <button onclick="setGameMode('1v1')" id="btnMode1v1" class="px-5 py-2 rounded-xl text-xs font-bold bg-pool-felt text-white shadow">1v1 Singles</button>
-            <button onclick="setGameMode('2v2')" id="btnMode2v2" class="px-5 py-2 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">2v2 Doubles</button>
-          </div>
-
-          <div class="flex justify-center items-center gap-2 pb-1">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Game</span>
-            <button onclick="setGameType('9ball')" id="btnType9ball" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-pool-felt text-white shadow">9-Ball</button>
-            <button onclick="setGameType('8ball')" id="btnType8ball" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">8-Ball</button>
-          </div>
-
-          <div class="flex justify-center items-center gap-2 pb-1">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tables</span>
-            <button onclick="setTableCount(1)" id="tblCnt1" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-pool-felt text-white shadow">1</button>
-            <button onclick="setTableCount(2)" id="tblCnt2" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">2</button>
-          </div>
-          <div id="tableAssignPanel" class="hidden bg-slate-900/60 border border-slate-700 rounded-xl p-3"></div>
           <div id="tableTabs" class="hidden flex gap-2 justify-center"></div>
+          <div id="upNextBanner" class="hidden bg-emerald-900/60 border border-emerald-500 text-emerald-100 text-sm font-bold rounded-xl px-4 py-3"></div>
 
-          <div class="flex flex-col sm:flex-row gap-3 pt-2">
-            <button onclick="startNextMatch()" id="startMatchBtn" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition text-sm shadow-md">
-              Start Next Match
+          <div class="flex gap-2">
+            <button onclick="startNextMatch()" id="startMatchBtn" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold min-h-[56px] rounded-xl transition text-base shadow-md">Start Next Match</button>
+            <button id="shuffleBtn" onclick="toggleShuffleMode()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 min-h-[56px] rounded-xl border border-slate-600 transition">
+              Queue:<br><span id="shuffleModeLabel" class="text-sky-400 font-bold text-sm">In order</span>
             </button>
-            <button id="shuffleBtn" onclick="toggleShuffleMode()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-4 py-3 rounded-xl border border-slate-600 transition">
-              Mode: <span id="shuffleModeLabel" class="text-sky-400 font-bold">Standard Rotation</span>
-            </button>
           </div>
 
-          <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2">
-            <span id="sessionInfo" class="text-[11px] text-slate-400">🗓 Tonight's session</span>
-            <button id="newSessionBtn" onclick="newSession()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold px-3 py-1.5 rounded-lg border border-slate-600 transition">New Session</button>
-          </div>
-        </section>
+          <div id="startHint" class="hidden text-xs text-amber-300 text-center -mt-1"></div>
 
-        <!-- Dynamic Upcoming Matches Schedule -->
-        <section class="bg-pool-card border border-slate-700 rounded-2xl p-5 shadow-xl space-y-3">
-          <div class="flex justify-between items-center border-b border-slate-700 pb-3">
-            <h2 class="text-lg font-bold text-sky-400">Upcoming Match Schedule</h2>
-            <span class="text-[10px] bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded font-mono uppercase">Live Queue</span>
+          <div class="flex flex-wrap justify-center items-center gap-2">
+            <button onclick="setGameMode('1v1')" id="btnMode1v1" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-pool-felt text-white shadow">1 vs 1</button>
+            <button onclick="setGameMode('2v2')" id="btnMode2v2" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">2 vs 2</button>
+            <span class="text-slate-600">|</span>
+            <button onclick="setGameType('9ball')" id="btnType9ball" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-pool-felt text-white shadow">9-Ball</button>
+            <button onclick="setGameType('8ball')" id="btnType8ball" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">8-Ball</button>
+            <span class="text-slate-600">|</span>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tables</span>
+            <button onclick="setTableCount(1)" id="tblCnt1" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-pool-felt text-white shadow">1</button>
+            <button onclick="setTableCount(2)" id="tblCnt2" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">2</button>
           </div>
-          <div id="upcomingMatchesList" class="space-y-2"></div>
+
+          <div id="raceBox" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl p-3"></div>
+
+          <div class="border-t border-slate-700 pt-3 space-y-2">
+            <div class="flex justify-between items-center">
+              <h3 class="text-sm font-bold text-slate-200">Teams and coming up</h3>
+              <span class="text-[10px] bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded font-mono uppercase">Live queue</span>
+            </div>
+            <div id="upcomingMatchesList" class="space-y-2"></div>
+          </div>
         </section>
 
         <!-- 2v2 TEAMS (Standard mode) -->
-        <section id="teamsPanel" class="hidden bg-pool-card border border-slate-700 rounded-2xl p-5 shadow-xl space-y-3">
-          <div class="flex flex-wrap justify-between items-center gap-2 border-b border-slate-700 pb-3">
-            <h2 class="text-lg font-bold text-sky-400">Teams (2v2)</h2>
+        <details id="teamsPanel" class="hidden bg-pool-card border border-slate-700 rounded-2xl shadow-xl">
+          <summary class="p-4 cursor-pointer min-h-[44px]">
+            <h2 class="inline text-lg font-bold text-sky-400">Teams (2 vs 2)</h2>
+            <span id="teamsSummary" class="text-xs text-slate-400 ml-2"></span>
+          </summary>
+          <div class="p-5 pt-1 space-y-3">
+          <div class="flex flex-wrap justify-end items-center gap-2 border-b border-slate-700 pb-3">
             <div id="teamsButtons" class="flex flex-wrap gap-2">
               <button onclick="autoMakeTeams()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition">Auto-make teams</button>
               <button onclick="addTeam()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-lg border border-slate-600 transition">+ Team</button>
@@ -162,16 +157,33 @@
             <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Unassigned (Online)</p>
             <div id="teamsPool" class="flex flex-wrap gap-1.5"></div>
           </div>
-        </section>
+          </div>
+        </details>
+
+        <div id="tableAssignPanel" class="hidden bg-pool-card border border-slate-700 rounded-2xl p-4"></div>
+
+        <details class="bg-pool-card border border-slate-700 rounded-2xl p-4 shadow-xl">
+          <summary class="text-sm font-bold text-slate-200 cursor-pointer min-h-[28px]">More settings: number of tables, tonight's session</summary>
+          <div class="space-y-3 pt-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2">
+            <span id="sessionInfo" class="text-[11px] text-slate-400">🗓 Tonight's session</span>
+            <button id="newSessionBtn" onclick="newSession()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold px-3 py-1.5 rounded-lg border border-slate-600 transition">New Session</button>
+          </div>
+          </div>
+        </details>
+
 
         <!-- Player Availability Toggle Grid -->
-        <section class="bg-pool-card border border-slate-700 rounded-2xl p-5 shadow-xl space-y-3">
-          <div class="flex justify-between items-center">
-            <h2 id="availableCountTitle" class="text-lg font-bold text-sky-400">Available Players</h2>
-            <p id="availabilityHint" class="text-[11px] text-slate-400 italic">Click player card to toggle Online/Offline</p>
+        <details id="playersBox" class="bg-pool-card border border-slate-700 rounded-2xl shadow-xl">
+          <summary class="p-4 cursor-pointer min-h-[44px]">
+            <h2 id="availableCountTitle" class="inline text-lg font-bold text-sky-400">Players</h2>
+            <span class="text-xs text-slate-400 ml-2">tap to open or close</span>
+          </summary>
+          <div class="px-5 pb-5 space-y-3">
+            <p id="availabilityHint" class="text-[11px] text-slate-400 italic">Tap a player card to switch them Ready / Away</p>
+            <div id="availabilityGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2"></div>
           </div>
-          <div id="availabilityGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2"></div>
-        </section>
+        </details>
       </div>
 
       <!-- PAGE 2: SCOREBOARD -->
@@ -333,7 +345,7 @@
       appId: "1:311987196667:web:eeb7491670da92a7e5565e"
     };
 
-    const BUILD = '2026-10-23-r9';
+    const BUILD = '2026-10-23-r15';
     const dbgLog = [];
     function dbg(m) {
       dbgLog.push(new Date().toLocaleTimeString() + ' ' + m);
@@ -414,6 +426,7 @@
       activeGame: null,             // Table 1
       activeGame2: null,            // Table 2
       tableCount: 1,
+      raceTarget: 7,                // head-to-head race: first to this many games
       tableAssign: {},              // name -> 1 | 2 (only used with 2 tables)
       t2: { mode: '1v1', gameType: '9ball', shuffle: false, draw: null, teams: [] },  // Table 2's own settings
       selectedGameMode: '1v1',
@@ -476,6 +489,7 @@
         state.activeGame = data.activeGame || null;
         state.activeGame2 = data.activeGame2 || null;
         state.tableCount = data.tableCount === 2 ? 2 : 1;
+        state.raceTarget = Math.min(21, Math.max(1, parseInt(data.raceTarget, 10) || 7));
         state.tableAssign = data.tableAssign || {};
         { const d2 = data.t2 || {};
           state.t2 = { mode: d2.mode === '2v2' ? '2v2' : '1v1', gameType: validGameType(d2.gameType), shuffle: !!d2.shuffle, draw: d2.draw || null, teams: d2.teams || [] }; }
@@ -706,7 +720,7 @@
     // --- RENDER ROUTINE ---
     function render() {
       renderActiveGame();
-      inTable(viewTable, () => { renderUpcomingAndAvailability(); renderRoleAndGameType(); });
+      inTable(viewTable, () => { renderUpcomingAndAvailability(); renderRoleAndGameType(); renderRaceBox(); });
       renderLeaderboard();
       renderTournamentBracket();
       renderHistory();
@@ -732,7 +746,7 @@
     }
 
     function pillClass(active, padding, enabled) {
-      return `${padding} rounded-xl text-xs font-bold ${active ? 'bg-pool-felt text-white shadow' : 'bg-slate-800 text-slate-400 border border-slate-700'} ${enabled ? '' : 'opacity-60 cursor-not-allowed'}`;
+      return `${padding} rounded-xl text-xs font-bold ${active ? 'bg-pool-felt text-white shadow' : 'bg-slate-900 text-slate-200 border border-slate-500'} ${enabled ? '' : 'opacity-60 cursor-not-allowed'}`;
     }
 
     // Shows/hides/disables controls depending on who is logged in and REFEREE_ONLY
@@ -915,7 +929,41 @@
       saveState();
     }
 
+    function nextMatchPlayers() {
+      try {
+        if (state.shuffleMode) { const d = drawIsValid(state.shuffleDraw) ? state.shuffleDraw : null; return d ? [...d.sideA, ...d.sideB] : []; }
+        if (state.selectedGameMode === '2v2') { const pr = pickPairing(freeTeams(), sessionCopy()); return pr ? [pr[0].p1, pr[0].p2, pr[1].p1, pr[1].p2] : []; }
+        const q = (state.rotationQueue || []).filter(n => !busyNames().has(n) && inScope(n));
+        return q.length >= 2 ? pick1v1(q, sessionCopy()) : [];
+      } catch (e) { return []; }
+    }
+    // why Start cannot work right now ('' = it can); runs inside inTable
+    function startBlocker() {
+      const mode = state.selectedGameMode, need = mode === '1v1' ? 2 : 4;
+      const pool = readyNames().filter(n => !busyNames().has(n));
+      if (state.shuffleMode || mode === '1v1') return pool.length >= need ? '' : `Need at least ${need} free Ready players on this table.`;
+      return freeTeams().length >= 2 ? '' : 'Make teams first: open Teams below and tap Auto-make teams.';
+    }
+    let lastUpNext = null;
+    function renderUpNext() {
+      const ban = document.getElementById('upNextBanner');
+      if (!ban) return;
+      let hit = null;
+      if (currentUser && !isReferee) {
+        for (let t = 1; t <= tablesShown(); t++) {
+          if (gameAt(t)) continue;
+          if (inTable(t, nextMatchPlayers).includes(currentUser)) { hit = t; break; }
+        }
+      }
+      if (!hit) { ban.classList.add('hidden'); lastUpNext = null; return; }
+      ban.classList.remove('hidden');
+      ban.innerText = `You are up next${tablesShown() === 2 ? ' on Table ' + hit : ''}. Head to the table!`;
+      if (lastUpNext !== hit) { try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {} }
+      lastUpNext = hit;
+    }
+
     function renderTableStatus() {
+      renderUpNext();
       const badge = document.getElementById('tableStatusBadge');
       if (badge) {
         let h = '';
@@ -929,14 +977,19 @@
       }
       [1, 2].forEach(n => {
         const el = document.getElementById('tblCnt' + n);
-        if (el) { el.className = pillClass(tablesShown() === n, 'px-4 py-1.5', canDo('gameSetup')); el.disabled = !canDo('gameSetup'); }
+        if (el) { el.className = pillClass(tablesShown() === n, 'px-4 py-2.5', canDo('gameSetup')); el.disabled = !canDo('gameSetup'); }
       });
       const two = state.tableCount === 2;
       const sb = document.getElementById('startMatchBtn');
       if (sb) {
         if (two) sb.innerText = gameAt(viewTable) ? `Table ${viewTable} is busy` : `Start Next Match → Table ${viewTable}`;
-        else { const f = freeTable(); sb.innerText = f ? `Start Next Match → Table ${f}` : 'All tables busy'; }
+        else { const f = freeTable(); sb.innerText = f ? 'Start Next Match' : 'All tables busy'; }
       }
+      const hint = document.getElementById('startHint');
+      const tableFree = two ? !gameAt(viewTable) : !!freeTable();
+      const why = tableFree ? inTable(viewTable, startBlocker) : '';
+      if (sb) { sb.classList.toggle('bg-emerald-600', !why); sb.classList.toggle('hover:bg-emerald-500', !why); sb.classList.toggle('bg-slate-700', !!why); }
+      if (hint) { hint.innerText = why; hint.classList.toggle('hidden', !why); }
       const tabs = document.getElementById('tableTabs'), panel = document.getElementById('tableAssignPanel');
       const names = getPlayerNames().filter(isReady);
       const mine = currentUser && !isReferee ? assignedTable(currentUser) : 0;
@@ -997,7 +1050,7 @@
             ${side('border-sky-500/30', is1 ? 'Player 1' : tl[0], g.sideA)}
             ${side('border-amber-500/30', is1 ? 'Player 2' : tl[1], g.sideB)}
           </div>
-          ${canDo('endMatch') ? `<div class="flex flex-col sm:flex-row gap-3">
+          ${g.race ? raceHtml(g, t) : canDo('endMatch') ? `<div class="flex flex-col sm:flex-row gap-3">
             <button onclick="endMatch('Side A', ${t})" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded-xl transition shadow-md">Side A Victory 🏆</button>
             <button onclick="endMatch('Side B', ${t})" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl transition shadow-md">Side B Victory 🏆</button>
           </div>
@@ -1037,7 +1090,7 @@
       syncRotationQueue();
       const activeAvailable = state.rotationQueue || [];
       const countTitle = document.getElementById('availableCountTitle');
-      if (countTitle) countTitle.innerText = `Available Players (${activeAvailable.length})`;
+      if (countTitle) countTitle.innerText = `Players: ${activeAvailable.length} Ready of ${getPlayerNames().length}`;
 
       renderUpcoming(document.getElementById('upcomingMatchesList'), is1v1, activeAvailable);
 
@@ -1069,7 +1122,7 @@
       }
 
       const shuffleLabel = document.getElementById('shuffleModeLabel');
-      if (shuffleLabel) shuffleLabel.innerText = state.shuffleMode ? 'Random Shuffle' : 'Standard Rotation';
+      if (shuffleLabel) shuffleLabel.innerText = state.shuffleMode ? 'Random' : 'In order';
     }
 
     function toggleAvailability(name) {
@@ -1162,13 +1215,8 @@
       switchPage('scoreboard');
     }
 
-    function endMatch(winningSide, tNo) {
-      tNo = tNo === 2 ? 2 : 1;
-      if (!requireAccess('endMatch', 'end a match')) return;
-      const game = gameAt(tNo);
-      if (!game) return;
-      const isAWin = winningSide === 'Side A';
-      if (!confirm(`Record ${(isAWin ? game.sideA : game.sideB).join(' & ')} as the winner?`)) return;
+    // writes one finished game into the players' stats and the match history
+    function recordGameResult(game, isAWin, id) {
       const winners = isAWin ? game.sideA : game.sideB;
       const losers = isAWin ? game.sideB : game.sideA;
       const statKey = game.mode === '1v1' ? 'stats1v1' : 'stats2v2';
@@ -1190,18 +1238,169 @@
 
       if (!state.matchHistory) state.matchHistory = [];
       state.matchHistory.unshift({
-        id: Date.now(),
+        id: id,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         mode: game.mode,
         gameType: gameType,
         winners: winners,
         losers: losers,
+        ...(game.race ? { race: true } : {}),
         ...(game.replaced && game.replaced.length ? { subs: game.replaced } : {})
       });
+
+    }
+
+    function endMatch(winningSide, tNo) {
+      tNo = tNo === 2 ? 2 : 1;
+      if (!requireAccess('endMatch', 'end a match')) return;
+      const game = gameAt(tNo);
+      if (!game) return;
+      const isAWin = winningSide === 'Side A';
+      if (!confirm(`Record ${(isAWin ? game.sideA : game.sideB).join(' & ')} as the winner?`)) return;
+      recordGameResult(game, isAWin, Date.now());
 
       setGameAt(tNo, null);
       saveState();
       switchPage(activeGames().length ? 'scoreboard' : 'standings');
+    }
+
+    // ===== HEAD-TO-HEAD RACE (only 2 players or 2 teams) =====
+    // The score lives on the table card; every game is recorded when the race ends (or is cancelled).
+    // who races is chosen in the Lobby, separately for each table
+    const emptySel = () => ({ p: [null, null], q: [null, null, null, null] });
+    let raceSel = { 1: emptySel(), 2: emptySel() };
+    function setRaceSel(t, kind, i, v) { raceSel[t][kind][i] = v; render(); }
+    // runs inside inTable(t): 1v1 = any 2 free players, 2v2 = any 4 free players (2 per side)
+    function raceCandidates(t) {
+      const sel = raceSel[t], mode = state.selectedGameMode;
+      const pool = readyNames().filter(x => !busyNames().has(x));
+      if (mode === '1v1') {
+        if (pool.length < 2) return null;
+        const a = pool.includes(sel.p[0]) ? sel.p[0] : pool[0];
+        const b = pool.includes(sel.p[1]) && sel.p[1] !== a ? sel.p[1] : pool.find(x => x !== a);
+        sel.p = [a, b];
+        return { mode, sideA: [a], sideB: [b], pool };
+      }
+      if (pool.length < 4) return null;
+      const tm = freeTeams();
+      const def = tm.length >= 2 ? [tm[0].p1, tm[0].p2, tm[1].p1, tm[1].p2] : pool.slice(0, 4);
+      const used = [];
+      let q = sel.q.map(x => (x && pool.includes(x) && !used.includes(x)) ? (used.push(x), x) : null);
+      q = q.map(x => { if (x) return x; const n = def.find(d => !used.includes(d)) || pool.find(d => !used.includes(d)); used.push(n); return n; });
+      sel.q = q;
+      const same = (t2, x, y) => t2.p1 && t2.p2 && ((t2.p1 === x && t2.p2 === y) || (t2.p1 === y && t2.p2 === x));
+      const ta = (state.teams || []).find(t2 => same(t2, q[0], q[1])), tb = (state.teams || []).find(t2 => same(t2, q[2], q[3]));
+      const out = { mode, sideA: [q[0], q[1]], sideB: [q[2], q[3]], pool };
+      if (ta && tb) { out.teamIds = [ta.id, tb.id]; out.teamLabels = [teamLabelOf(ta), teamLabelOf(tb)]; }
+      return out;
+    }
+    function changeRaceTarget(d) {
+      if (!requireAccess('gameSetup', 'change the race length')) return;
+      state.raceTarget = Math.min(21, Math.max(1, (state.raceTarget || 7) + d));
+      saveState();
+    }
+    function startRace(t) {
+      t = t === 2 ? 2 : 1;
+      if (!requireAccess('startMatch', 'start a race')) return;
+      inTable(t, () => {
+        const tNo = state.tableCount === 2 ? t : freeTable();
+        if (!tNo || gameAt(tNo)) { alert('This table already has a match in progress.'); return; }
+        const c = raceCandidates(t);
+        if (!c) { alert('A race needs at least 2 free players (1 vs 1) or 4 free players (2 vs 2) on this table.'); return; }
+        const game = { gameType: validGameType(state.selectedGameType), startTime: Date.now(), table: tNo,
+          race: { target: state.raceTarget || 7, a: 0, b: 0, log: [] }, mode: c.mode, sideA: c.sideA, sideB: c.sideB };
+        if (c.teamIds) { game.teamIds = c.teamIds; game.teamLabels = c.teamLabels; }
+        setGameAt(tNo, game);
+        markMatchStarted(game);
+        saveState();
+      });
+      raceOpen[t] = false;
+      switchPage('scoreboard');
+    }
+    function recordRaceGames(g) {
+      const base = Date.now();
+      g.race.log.forEach((side, i) => recordGameResult(g, side === 'A', base + i));
+    }
+    function raceScore(tNo, side) {
+      if (!requireAccess('endMatch', 'score a race')) return;
+      const g = gameAt(tNo);
+      if (!g || !g.race) return;
+      const r = g.race, key = side === 'B' ? 'b' : 'a';
+      if (r[key] + 1 >= r.target) {
+        const who = (side === 'B' ? g.sideB : g.sideA).join(' & ');
+        if (!confirm(`${who} reach ${r.target} and win the race. Finish and record all ${r.a + r.b + 1} games?`)) return;
+      }
+      r[key]++; r.log.push(side === 'B' ? 'B' : 'A');
+      if (r[key] >= r.target) {
+        recordRaceGames(g);
+        setGameAt(tNo, null);
+        saveState();
+        alert(`🏁 ${(side === 'B' ? g.sideB : g.sideA).join(' & ')} win the race ${r.a}–${r.b}. All ${r.log.length} games were counted.`);
+        switchPage(activeGames().length ? 'scoreboard' : 'standings');
+        return;
+      }
+      saveState();
+    }
+    function raceUndo(tNo) {
+      if (!requireAccess('endMatch', 'undo a race game')) return;
+      const g = gameAt(tNo);
+      if (!g || !g.race || !g.race.log.length) return;
+      const last = g.race.log.pop();
+      g.race[last === 'B' ? 'b' : 'a']--;
+      saveState();
+    }
+    function raceHtml(g, t) {
+      const r = g.race, nm = x => esc(x.join(' & '));
+      return `<div class="bg-slate-900 border border-amber-500/40 rounded-xl p-4 text-center">
+          <p class="text-[11px] uppercase font-bold text-amber-400 mb-1">🏁 Race to ${r.target} · first to ${r.target} wins · every game counts</p>
+          <p class="text-4xl font-extrabold text-white">${r.a} <span class="text-slate-500">–</span> ${r.b}</p>
+          <p class="text-xs text-slate-400 mt-1">${nm(g.sideA)} vs ${nm(g.sideB)}</p></div>
+        <div class="flex gap-3">
+          <button onclick="raceScore(${t}, 'A')" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white text-sm font-bold py-3 rounded-xl transition shadow-md">+1 ${nm(g.sideA)}</button>
+          <button onclick="raceScore(${t}, 'B')" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold py-3 rounded-xl transition shadow-md">+1 ${nm(g.sideB)}</button></div>
+        <div class="flex gap-3">
+          <button onclick="raceUndo(${t})" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold py-2 rounded-xl border border-slate-600">↶ Undo last game</button>
+          <button onclick="cancelMatch(${t})" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold py-2 rounded-xl border border-slate-600">✖ Cancel race</button></div>`;
+    }
+    function raceBoxHtml(t) {
+      const tNo = state.tableCount === 2 ? t : freeTable();
+      if (!tNo || gameAt(tNo)) return '';
+      const c = raceCandidates(t);
+      const two = tablesShown() === 2;
+      const title = two ? `Race on Table ${t}` : 'Head-to-head race';
+      if (!c) return '';
+      const one = c.mode === '1v1';
+      const sel = (kind, i, cur) => {
+        const opts = c.pool.map(n => `<option value="${encodeURIComponent(n)}"${n === cur ? ' selected' : ''}>${esc(n)}</option>`).join('');
+        return `<select onchange="setRaceSel(${t}, '${kind}', ${i}, decodeURIComponent(this.value))" class="bg-slate-800 border border-slate-600 text-sm rounded-lg p-2 text-white flex-1 min-w-[100px] min-h-[44px]">${opts}</select>`;
+      };
+      const rows = one
+        ? `<div class="flex flex-wrap items-center gap-2 mb-2">${sel('p', 0, c.sideA[0])}<span class="text-slate-500 text-xs font-bold">VS</span>${sel('p', 1, c.sideB[0])}</div>`
+        : `<div class="text-[11px] font-bold text-sky-400 mb-1">Team A</div><div class="flex gap-2 mb-2">${sel('q', 0, c.sideA[0])}${sel('q', 1, c.sideA[1])}</div>
+           <div class="text-[11px] font-bold text-amber-400 mb-1">Team B</div><div class="flex gap-2 mb-2">${sel('q', 2, c.sideB[0])}${sel('q', 3, c.sideB[1])}</div>`;
+      return `<div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">
+        <div class="flex justify-between items-start mb-2"><p class="text-xs font-bold text-amber-300">🏁 ${title}: pick who plays. Everyone else keeps their place.</p><button onclick="toggleRace(${t})" class="text-slate-300 text-xs px-2 min-h-[32px]">✕ Close</button></div>${rows}
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <span class="text-slate-300">First to</span>
+          <button onclick="changeRaceTarget(-1)" class="w-9 h-9 rounded-lg bg-slate-800 border border-slate-600 font-bold">−</button>
+          <b class="text-base text-white w-6 text-center">${state.raceTarget || 7}</b>
+          <button onclick="changeRaceTarget(1)" class="w-9 h-9 rounded-lg bg-slate-800 border border-slate-600 font-bold">+</button>
+          <button onclick="startRace(${t})" class="ml-auto bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 min-h-[44px] rounded-xl">🏁 Start Race${two ? ' on Table ' + t : ''}</button></div></div>`;
+    }
+    let raceOpen = { 1: false, 2: false };
+    function toggleRace(t) { raceOpen[t] = !raceOpen[t]; render(); }
+    function renderRaceBox() {
+      const el = document.getElementById('raceBox');
+      if (!el) return;
+      let btns = '', boxes = '';
+      for (let t = 1; t <= tablesShown(); t++) {
+        const tNo = state.tableCount === 2 ? t : freeTable();
+        if (!tNo || gameAt(tNo) || !inTable(t, () => raceCandidates(t))) continue;
+        if (raceOpen[t]) boxes += inTable(t, () => raceBoxHtml(t));
+        else btns += `<button onclick="toggleRace(${t})" class="bg-slate-900 hover:bg-slate-800 text-amber-300 text-xs font-bold px-4 min-h-[44px] rounded-xl border border-amber-500/50">🏁 Quick race${tablesShown() === 2 ? ' on Table ' + t : ''}</button>`;
+      }
+      el.className = btns || boxes ? 'space-y-2' : 'hidden';
+      el.innerHTML = (btns ? `<div class="flex flex-wrap justify-center gap-2">${btns}</div>` : '') + boxes;
     }
 
     function cancelMatch(tNo) {
@@ -1209,6 +1408,13 @@
       if (!requireAccess('endMatch', 'cancel a match')) return;
       const g = gameAt(tNo);
       if (!g) return;
+      if (g.race && g.race.log.length) {
+        if (!confirm(`Stop the race at ${g.race.a}–${g.race.b}? The ${g.race.log.length} games already played will still be counted.`)) return;
+        recordRaceGames(g);
+        setGameAt(tNo, null);
+        saveState();
+        return;
+      }
       if (!confirm('Cancel this match? No result is recorded and the players get their turn back.')) return;
       const s = ensureSession();
       const names = [...g.sideA, ...g.sideB];
@@ -2055,12 +2261,18 @@
       saveState();
     }
 
+    let teamsAutoOpened = false;
     function renderTeamsPanel() {
       const panel = document.getElementById('teamsPanel');
       if (!panel) return;
       const visible = state.selectedGameMode === '2v2' && !state.shuffleMode;
       panel.classList.toggle('hidden', !visible);
       if (!visible) return;
+      { const done = completeTeams().length, waiting = (state.rotationQueue || []).filter(n => !inAnyTeam(n) && inScope(n) && isReady(n)).length;
+        const sm = document.getElementById('teamsSummary');
+        if (sm) sm.innerText = `${done} ${done === 1 ? 'team' : 'teams'} · ${waiting} waiting`;
+        if (done < 2 && !teamsAutoOpened) { panel.open = true; teamsAutoOpened = true; }
+        if (done >= 2) teamsAutoOpened = false; }
 
       const can = canDo('teams');
       const teams = state.teams || [];
@@ -2268,7 +2480,7 @@
     function renderTeamSchedule(container) {
       const teams = freeTeams();
       if (teams.length < 2) {
-        container.innerHTML = '<p class="text-xs text-slate-400 italic">Need at least 2 free complete teams (every member Ready and not on a table). Make your teams below.</p>';
+        container.innerHTML = '<p class="text-xs text-slate-400 italic mb-2">Need at least 2 free complete teams (every member Ready and not on a table).</p><button onclick="autoMakeTeams()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold px-4 min-h-[44px] rounded-xl">Auto-make teams</button>';
         return;
       }
       const sim = sessionCopy();
